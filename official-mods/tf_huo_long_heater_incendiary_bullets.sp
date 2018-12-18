@@ -14,6 +14,7 @@
 #include <stocksoup/tf/tempents_stocks>
 
 #define TF_ECON_DEFINDEX_HUO_LONG_HEATER 811
+#define TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE 832
 
 bool g_bHuoLongRageDraining[MAXPLAYERS + 1];
 
@@ -129,6 +130,7 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
 	int assister = GetClientOfUserId(event.GetInt("assister"));
 	
+	//Regular Hong Long Dragon
 	if (attacker > 0 && attacker <= MaxClients
 			&& TF2_GetEntDefIndex(GetPlayerWeaponSlot(attacker, 0))
 			== TF_ECON_DEFINDEX_HUO_LONG_HEATER) {
@@ -138,6 +140,20 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	if (assister > 0 && assister <= MaxClients
 			&& TF2_GetEntDefIndex(GetPlayerWeaponSlot(assister, 0))
 			== TF_ECON_DEFINDEX_HUO_LONG_HEATER) {
+		ModifyRage(assister, 100.0 / 10.0);
+	}
+	
+	//////////////////////////
+	//Genuine Hong Long Dragon
+	if (attacker > 0 && attacker <= MaxClients
+			&& TF2_GetEntDefIndex(GetPlayerWeaponSlot(attacker, 0))
+			== TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE) {
+		ModifyRage(attacker, 100.0 / 5.0);
+	}
+	
+	if (assister > 0 && assister <= MaxClients
+			&& TF2_GetEntDefIndex(GetPlayerWeaponSlot(assister, 0))
+			== TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE) {
 		ModifyRage(assister, 100.0 / 10.0);
 	}
 }
@@ -159,7 +175,8 @@ public void OnClientPutInServer(int client) {
 public void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float damage,
 		int damagetype, int weapon, const float damageForce[3], const float damagePosition[3],
 		int damagecustom) {
-	if (TF2_GetEntDefIndex(weapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER) {
+	if (TF2_GetEntDefIndex(weapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER || 
+	TF2_GetEntDefIndex(weapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE) {
 		return;
 	}
 	
@@ -175,7 +192,8 @@ public void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float
 }
 
 public MRESReturn OnMinigunActivatePushback(int minigun) {
-	if (TF2_GetEntDefIndex(minigun) != TF_ECON_DEFINDEX_HUO_LONG_HEATER) {
+	if (TF2_GetEntDefIndex(minigun) != TF_ECON_DEFINDEX_HUO_LONG_HEATER ||
+	TF2_GetEntDefIndex(minigun) != TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE) {
 		return MRES_Ignored;
 	}
 	
@@ -200,7 +218,9 @@ public MRESReturn OnMinigunActivatePushback(int minigun) {
 public Action ApplyHuoLongParticles(Handle timer, int clientserial) {
 	int client = GetClientFromSerial(clientserial);
 	if (!client || TF2_GetEntDefIndex(GetPlayerWeaponSlot(client, 0))
-			!= TF_ECON_DEFINDEX_HUO_LONG_HEATER
+			!= TF_ECON_DEFINDEX_HUO_LONG_HEATER ||
+			TF2_GetEntDefIndex(GetPlayerWeaponSlot(client, 0)
+			!= TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE
 			|| !GetEntProp(client, Prop_Send, "m_bRageDraining")) {
 		return Plugin_Stop;
 	}
@@ -213,7 +233,8 @@ public Action ApplyHuoLongParticles(Handle timer, int clientserial) {
 
 public void OnClientPostThinkPost(int client) {
 	int hActiveWeapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-	if (TF2_GetEntDefIndex(hActiveWeapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER) {
+	if (TF2_GetEntDefIndex(hActiveWeapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER
+	|| TF2_GetEntDefIndex(hActiveWeapon) != TF_ECON_DEFINDEX_HUO_LONG_HEATER_GENUINE) {
 		return;
 	}
 	
