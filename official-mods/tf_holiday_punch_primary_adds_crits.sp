@@ -64,6 +64,7 @@ public void OnInventoryApplied(Event event, const char[] name, bool dontBroadcas
 
 public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int attacker = GetClientOfUserId(event.GetInt("attacker"));
+	int assister = GetClientOfUserId(event.GetInt("assister"));
 	int weaponid = event.GetInt("weaponid");
 	
 	if (weaponid != TF_WEAPON_MINIGUN) {
@@ -82,6 +83,7 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	}
 	
 	g_flStoredHolidayPunchCritTime[attacker] += TIME_HOLIDAY_PUNCH_INCREMENT;
+	g_flStoredHolidayPunchCritTime[assister] += TIME_HOLIDAY_PUNCH_INCREMENT / 2;
 	
 	if (g_flStoredHolidayPunchCritTime[attacker] > TIME_HOLIDAY_PUNCH_MAXIMUM) {
 		g_flStoredHolidayPunchCritTime[attacker] = TIME_HOLIDAY_PUNCH_MAXIMUM;
