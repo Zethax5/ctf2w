@@ -160,7 +160,7 @@ public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
     //Here's where the bonus damage is actually calculated
     //Takes the original damage dealt and subtracts the victim's health from it
     //Then multiplies the result by a decimal, so we're not dealing a boatload of damage after headshotting a Scout at max charge
-    Overkill_BonusDmg[weapon] = (Overkill_Dmg[weapon] - (float)Overkill_EnemyHealth[weapon]) * 0.15;
+    Overkill_BonusDmg[weapon] = (Overkill_Dmg[weapon] - (float)Overkill_EnemyHealth[weapon]) * 0.2;
     
     //Telling the system that the player hasn't fired their new power shot
     Overkill_Shot[weapon] = 2; 
