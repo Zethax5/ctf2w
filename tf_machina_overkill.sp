@@ -123,7 +123,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
     if(Overkill_BonusDmg[weapon] > 1.0) //If the weapon has overkill damage stored
     {
       //Stores the total damage dealt divided by the multiplier applied by Overkill damage.
-      OriginalDamage[attacker]  = damage - Overkill_Dmg[weapon];
+      OriginalDamage[attacker]  = damage - Overkill_BonusDmg[weapon];
       Overkill_BonusDmg[weapon] = 0.0;
     }
     //Should the weapon not have stored overkill damage, just store raw damage
@@ -159,8 +159,8 @@ public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
   {
     //Here's where the bonus damage is actually calculated
     //Takes the original damage dealt and subtracts the victim's health from it
-    //Simple as that
-    Overkill_BonusDmg[weapon] = Overkill_Dmg[weapon] - Overkill_EnemyHealth[weapon];
+    //Then multiplies the result by a decimal, so we're not dealing a boatload of damage after headshotting a Scout at max charge
+    Overkill_BonusDmg[weapon] = (Overkill_Dmg[weapon] - (float)Overkill_EnemyHealth[weapon]) * 0.15;
     
     //Telling the system that the player hasn't fired their new power shot
     Overkill_Shot[weapon] = 2; 
