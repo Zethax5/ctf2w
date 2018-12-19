@@ -46,7 +46,7 @@ public void TF2_OnConditionAdded(int client, TFCond cond) {
 		return;
 	}
 	
-	TF2_AddCondition(client, TFCond_RegenBuffed, .inflictor = provider);
+	//TF2_AddCondition(client, TFCond_RegenBuffed, .inflictor = provider);
 	TF2_AddCondition(client, TFCond_SpeedBuffAlly, .inflictor = provider);
 	SDKHook(client, SDKHook_PostThinkPost, OnCritBoostPostThinkPost);
 }
@@ -57,9 +57,9 @@ public void OnCritBoostPostThinkPost(int client) {
 		return;
 	}
 	
-	if (g_iCritProvider[client] == GetConditionProvider(client, TFCond_RegenBuffed)) {
-		TF2_RemoveCondition(client, TFCond_RegenBuffed);
-	}
+	//if (g_iCritProvider[client] == GetConditionProvider(client, TFCond_RegenBuffed)) {
+	//	TF2_RemoveCondition(client, TFCond_RegenBuffed);
+	//}
 	if (g_iCritProvider[client] == GetConditionProvider(client, TFCond_SpeedBuffAlly)) {
 		TF2_RemoveCondition(client, TFCond_SpeedBuffAlly);
 	}
