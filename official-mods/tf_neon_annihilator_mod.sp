@@ -9,6 +9,7 @@
 #include <weaponmod_utils>
 
 #define TF_ECON_DEFINDEX_NEON_ANNIHILATOR 813
+#define TF_ECON_DEFINDEX_NEON_ANNIHILATOR_GENUINE 834
 
 #define SCUBA_NOISE "player/breathe1.wav"
 
@@ -37,7 +38,8 @@ public Action OnTakeDamageAlive(int victim, int &attacker, int &inflictor, float
 	if (damagetype & DMG_DROWN) {
 		int weapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
 		if (IsValidEntity(weapon)
-				&& TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR) {
+				&& TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR
+					|| TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR_GENUINE) {
 			// Manipulate recovered amount to prevent free heals
 			int iDrownRestored = GetEntProp(victim, Prop_Data, "m_idrownrestored");
 			SetEntProp(victim, Prop_Data, "m_idrownrestored",
@@ -53,7 +55,8 @@ public Action OnTakeDamageAlive(int victim, int &attacker, int &inflictor, float
 			&& TF2_IsPlayerInNeonCritCondition(victim)) {
 		int weapon = GetEntPropEnt(attacker, Prop_Send, "m_hActiveWeapon");
 		if (IsValidEntity(weapon)
-				&& TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR) {
+				&& TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR
+					|| TF2_GetItemDefinitionIndex(weapon) == TF_ECON_DEFINDEX_NEON_ANNIHILATOR_GENUINE) {
 			damagetype |= DMG_CRIT;
 			damage *= 3.0;
 			return Plugin_Changed;
