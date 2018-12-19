@@ -21,10 +21,15 @@ public void OnMapStart() {
 
 public void OnClientPutInServer(int client) {
 	HookWeaponSwitch(client);
+	HookPostThink(client);
 }
 
 void HookWeaponSwitch(int client) {
 	SDKHook(client, SDKHook_WeaponSwitchPost, OnWeaponSwitchPost);
+}
+
+void HookPostThink(int client) {
+	SDKHook(client, SDKHook_PostThinkPost, OnClientPostThinkPost);
 }
 
 public void OnWeaponSwitchPost(int client, int weapon) {
@@ -53,6 +58,15 @@ public void TF2_OnConditionRemoved(int client, TFCond cond) {
 		if (IsBlastJumpCritWeapon(GetPlayerWeaponSlot(client, 2))) {
 			TF2_RemoveCondition(client, TFCond_CritOnDamage);
 		}
+	}
+}
+
+public void OnClientPostThinkPost(client)
+{
+	if(IsBlastJumpCritWeapon(GetPlayerWeaponSlot(client, 2))
+		&& GetClientFlags(client) & FL_ONGROUND == FL_ONGROUND) {
+		
+		TF2_RemoveCondition(client, TFCond_CritOnDamage);
 	}
 }
 
