@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: Wednesday, December 19th, 2018
 Last edit made on: Thursday, December 20th, 2018
-Current version: v0.1
+Current version: v1.0
 
 Attributes in this plugin:
   - "shield on kill"
@@ -13,6 +13,7 @@ Attributes in this plugin:
 	Grants the user a shield on kill.
 	While this shield is active, the user takes X% less damage.
 	The shield will last until the user takes X damage or more from a single attack.
+	
   - "shield explodes when destroyed"
   	Requires "shield on kill" to be on weapon of choice
 	1) Radius of the explosion
@@ -32,7 +33,7 @@ Attributes in this plugin:
 
 #define PLUGIN_AUTHOR           "Zethax"
 #define PLUGIN_DESC             "Yet another pack of attributes I've made for Crafting and his servers"
-#define PLUGIN_VERSION          "v0.1"
+#define PLUGIN_VERSION          "v1.0"
 #define PLUGIN_NAME             "New Attributes"
 
 #define PARTICLE_SHIELD					"powerup_supernova_ready"
