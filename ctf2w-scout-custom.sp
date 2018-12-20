@@ -30,6 +30,8 @@ Attributes in this plugin:
 #include <cw3-attributes>
 #include <tf2>
 #include <zethax>
+#include <sdkhooks>
+#include <sdktools>
 
 #define PLUGIN_AUTHOR           "Zethax"
 #define PLUGIN_DESC             "Yet another pack of attributes I've made for Crafting and his servers"
