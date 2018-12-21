@@ -109,31 +109,33 @@ public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBr
 
 public static void CleanseBanner_PostThink(client)
 {
-  if(!IsValidClient(client))
-    return;
+	if(!IsValidClient(client))
+		return;
   
-  if(CleanseBanner_ToHeal[client])
-  {
-    new healer = CleanseBanner_Healer[client];
-    if(IsValidClient(healer))
-    {
-      new banner = GetPlayerWeaponSlot(healer, 1);
-      if(banner > 0 && banner < 2049 && CleanseBanner[banner])
-      {
-        HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
-      }
-    }
-  }
+	if(CleanseBanner_ToHeal[client])
+	{
+		new healer = CleanseBanner_Healer[client];
+		if(IsValidClient(healer))
+		{
+			new banner = GetPlayerWeaponSlot(healer, 1);
+			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
+			{
+				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
+				CleanseBanner_ToHeal[client] = false;
+				CleanseBanner_Healer[client] = -1;
+			}
+		}
+	}
   
-  new banner = GetPlayerWeaponSlot(client, 1);
-  if(banner < 0 || banner > 2048)
-    return;
-  if(!CleanseBanner[banner])
-    return;
-  
-  if(BuffDeployed[client])
-  {
-    new team = GetClientTeam(client);
+	new banner = GetPlayerWeaponSlot(client, 1);
+		return;
+	if(!CleanseBanner[banner])
+	return;
+  	
+	CleanseBanner_NumPlayers[banner] = 0;
+	if(BuffDeployed[client])
+	{
+		new team = GetClientTeam(client);
 		for (new i = 1; i <= MaxClients; i++)
 		{
 			new Float:Pos1[3];
@@ -146,12 +148,12 @@ public static void CleanseBanner_PostThink(client)
 				if (distance <= 450.0)
 				{
 					TF2_RemoveCondition(i, TFCond:16);
-          CleanseBanner_ToHeal[i] = true;
-          CleanseBanner_Healer[i] = client;
-          CleanseBanner_NumPlayers[client]++;
-          //Insert debuff reduction stuff here
+					CleanseBanner_ToHeal[i] = true;
+					CleanseBanner_Healer[i] = client;
+					CleanseBanner_NumPlayers[banner]++;
+					//Insert debuff reduction stuff here
 				}
 			}
 		}
-  }
+	}
 }
