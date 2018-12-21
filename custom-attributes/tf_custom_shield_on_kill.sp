@@ -36,7 +36,7 @@ Attributes in this plugin:
 #define PLUGIN_AUTHOR           "Zethax"
 #define PLUGIN_DESC             "Yet another pack of attributes I've made for Crafting and his servers"
 #define PLUGIN_VERSION          "v1.0"
-#define PLUGIN_NAME             "New Attributes"
+#define PLUGIN_NAME             "Shield On Kill"
 
 #define PARTICLE_SHIELD					"powerup_supernova_ready"
 #define PARTICLE_EXPLODE        "ExplosionCore_Wall"
