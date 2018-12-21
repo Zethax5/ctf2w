@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: Friday, December 21st, 2018
 Last edit made on: Friday, December 21st, 2018
-Current version: v0.1
+Current version: v1.0
 
 Attributes in this pack
   None so far
@@ -19,8 +19,8 @@ Attributes in this pack
 
 #define PLUGIN_AUTHOR   "Zethax"
 #define PLUGIN_DESC     "Custom attributes used on custom Demoman weapons on the cTF2w servers."
-#define PLUGIN_VERS     "v0.1"
-#define PLUGIN_NAME     "Custom Attributes for Demoman Weapons by Zethax"
+#define PLUGIN_VERS     "v1.0"
+#define PLUGIN_NAME     "Trigger Switch Attribute"
 
 public Plugin:my_info() = {
 
@@ -59,7 +59,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib, const String
   if(weapon < 0 || weapon > 2048)
     return Plugin_Continue;
   
-  if(StrEqual(attrib, "drunkards wrath triggers"))
+  if(StrEqual(attrib, "trigger switch attrib"))
   {
     DrunkardsWrath[weapon] = true;
     action = Plugin_Handled;
