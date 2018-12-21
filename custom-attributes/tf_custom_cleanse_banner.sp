@@ -20,7 +20,7 @@ Attributes in this pack:
 
 #define PLUGIN_AUTHOR  "Zethax"
 #define PLUGIN_DESC    "All custom attributes for custom Soldier weapons on the cTF2w server."
-#define PLUGIN_NAME    "New Soldier Attributes by Zethax"
+#define PLUGIN_NAME    "Cleanse Banner"
 #define PLUGIN_VERS    "v0.1"
 
 public Plugin:my_info = {
