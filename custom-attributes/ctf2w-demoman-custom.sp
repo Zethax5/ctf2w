@@ -17,27 +17,35 @@ Attributes in this pack
 #include <sdkhooks>
 #include <sdktools>
 
-if(victim>0 && IsValidEdict(victim) && IsClientInGame(victim) && IsPlayerAlive(victim) && damage>0)
-    {
-        new String:dmg_str[16];
-        IntToString(damage,dmg_str,16);
-        new String:dmg_type_str[32];
-        IntToString(dmg_type,dmg_type_str,32);
-        new pointHurt=CreateEntityByName("point_hurt");
-        if(pointHurt)
-        {
-            DispatchKeyValue(victim,"targetname","war3_hurtme");
-            DispatchKeyValue(pointHurt,"DamageTarget","war3_hurtme");
-            DispatchKeyValue(pointHurt,"Damage",dmg_str);
-            DispatchKeyValue(pointHurt,"DamageType",dmg_type_str);
-            if(!StrEqual(logname,""))
-            {
-                DispatchKeyValue(pointHurt,"classname",logname);
-            }
-            DispatchSpawn(pointHurt);
-            AcceptEntityInput(pointHurt,"Hurt",(attacker>0)?attacker:-1);
-            DispatchKeyValue(pointHurt,"classname","point_hurt");
-            DispatchKeyValue(victim,"targetname","war3_donthurtme");
-            RemoveEdict(pointHurt);
-        }
-    }
+#define PLUGIN_AUTHOR   "Zethax"
+#define PLUGIN_DESC     "Custom attributes used on custom Demoman weapons on the cTF2w servers."
+#define PLUGIN_VERS     "v0.1"
+#define PLUGIN_NAME     "Custom Attributes for Demoman Weapons by Zethax"
+
+public Plugin:my_info() = {
+
+  name        = PLUGIN_NAME,
+  description = PLUGIN_DESC,
+  author      = PLUGIN_AUTHOR,
+  version     = PLUGIN_VERS,
+  url         = ""
+};
+
+new bool:DrunkardsWrath[2049];
+
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib, const String:plugin, const String:value, bool:whileActive)
+{
+  new Action:action;
+  
+  new weapon = GetPlayerWeaponSlot(client, slot);
+  if(weapon < 0 || weapon > 2048)
+    return Plugin_Continue;
+  
+  if(StrEqual(attrib, "drunkards wrath triggers"))
+  {
+    DrunkardsWrath[weapon] = true;
+    action = Plugin_Handled;
+  }
+  
+  return action;
+}
