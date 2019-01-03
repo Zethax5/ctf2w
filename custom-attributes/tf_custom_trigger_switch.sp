@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Friday, December 21st, 2018
-Last edit made on: Friday, December 21st, 2018
+Last edit made on: Thursday, January 3rd, 2019
 Current version: v1.0
 
 Attributes in this pack
@@ -55,6 +55,9 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib, const String
 {
   new Action:action;
   
+  if(!StrEqual(attrib, "tf_custom_trigger_switch"))
+    return Plugin_Continue;
+  
   new weapon = GetPlayerWeaponSlot(client, slot);
   if(weapon < 0 || weapon > 2048)
     return Plugin_Continue;
@@ -62,6 +65,14 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib, const String
   if(StrEqual(attrib, "trigger switch attrib"))
   {
     DrunkardsWrath[weapon] = true;
+    DrunkardsWrath_Mode[weapon] = false;
+    
+    //Setting attributes used by Precision mode
+    TF2Attrib_SetByName(weapon, "fire rate bonus", 0.8);
+    TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
+    TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
+    TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.1);
+    
     action = Plugin_Handled;
   }
   
@@ -86,14 +97,53 @@ public static void OnClientPostThink(client)
   
   if((buttons & IN_ATTACK3) == IN_ATTACK3 && GetEngineTime() > DrunkardsWrath_Delay[weapon] + 0.5)
   {
-    if(DrunkardsWrath_Mode[weapon])
+    //Precision trigger mode
+    //Fire faster, reload faster, but less splash, and bombs fizzle upon landing
+    if(DrunkardsWrath_Mode[weapon]) //If the gun is in AoE mode
     {
+      //Setting attributes used by Precision mode
       TF2Attrib_SetByName(weapon, "fire rate bonus", 0.8);
       TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
       TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
+      TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.1);
       
-      DrunkardsWrath_Mode[weapon] = false;
+      //Removing attributes used by AoE mode
+      TF2Attrib_RemoveByName(weapon, "damage penalty");
+      TF2Attrib_RemoveByName(weapon, "Blast radius increased");
+      TF2Attrib_RemoveByName(weapon, "fuse bonus");
+      
+      DrunkardsWrath_Mode[weapon] = false; //Tells the system the gun is in Precision mode
     }
+    
+    //AoE trigger mode
+    //Big splash, longer fuse time for grenades, but less damage
+    else if(!DrunkardsWrath_Mode[weapon]) //If the gun is in Precision mode
+    {
+      //Setting attributes used by AoE mode
+      TF2Attrib_SetByName(weapon, "damage penalty", 0.8);
+      TF2Attrib_SetByName(weapon, "Blast radius increased", 2.0);
+      TF2Attrib_SetByName(weapon, "fuse bonus", 3.5);
+      
+      //Removing attributes used by Precision mode
+      TF2Attrib_RemoveByName(weapon, "Blast radius decreased");
+      TF2Attrib_RemoveByName(weapon, "fire rate bonus");
+      TF2Attrib_RemoveByName(weapon, "Reload time decreased");
+      TF2Attrib_RemoveByName(weapon, "stickybomb fizzle time");
+      
+      DrunkardsWrath_Mode[weapon] = true; //Tells the system gun is in AoE mode
+    }
+    
+    //Sets a delay before the player can switch triggers again
+    //Mostly to stop spamming
     DrunkardsWrath_Delay[weapon] = GetEngineTime();
   }
+}
+
+public OnEntityDestroyed(ent)
+{
+  if(ent < 0 || ent > 2048)
+    return;
+  
+  DrunkardsWrath[weapon] = false;
+  DrunkardsWrath_Mode[weapon] = false;
 }
