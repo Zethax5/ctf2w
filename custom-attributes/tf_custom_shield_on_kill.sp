@@ -92,7 +92,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 {
 	new Action:action;
   
-	if(!StrEqual(plugin, "new-attributes-zethax"))
+	if(!StrEqual(plugin, "tf_custom_shield_on_kill"))
 		return Plugin_Continue;
   
 	new weapon = GetPlayerWeaponSlot(client, slot);
