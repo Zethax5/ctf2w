@@ -62,7 +62,7 @@ new CleanseBanner_Healer[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-  if(!StrEqual(plugin, "ctf2w-soldier-custom"))
+  if(!StrEqual(plugin, "tf_custom_cleanse_banner"))
     return Plugin_Continue;
   
   new Action:action;
@@ -80,8 +80,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
       CleanseBanner_Healing[weapon] = StringToInt(values[1]);
       
       //Enables the rage meter and what not
-      TF2Attrib_SetByName(weapon, "mod soldier buff type", 1.0);
-		  TF2Attrib_SetByName(weapon, "kill eater score type", 51.0);
+      TF2Attrib_SetByName(weapon, "mod soldier buff type", 5.0);
+      TF2Attrib_SetByName(weapon, "kill eater score type", 51.0);
       
       CleanseBanner[weapon] = true;
       action = Plugin_Handled;
@@ -91,8 +91,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 }
 
 public OnClientPostThink(client)
-{
-  CleanseBanner_PostThink(client);
+{	
+	//Because of the way custom buff banners work, this needs to be put in place
+	//The system only applies the effects 5 times per second
+	//This is to keep the system from getting overloaded
+	if(CleanseBanner_Delay[client] > GetEngineTime() + 0.2)
+	CleanseBanner_PostThink(client);
 }
 
 public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBroadcast)
@@ -112,28 +116,10 @@ public static void CleanseBanner_PostThink(client)
 	if(!IsValidClient(client))
 		return;
   
-	if(CleanseBanner_ToHeal[client])
-	{
-		new healer = CleanseBanner_Healer[client];
-		if(IsValidClient(healer))
-		{
-			new banner = GetPlayerWeaponSlot(healer, 1);
-			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
-			{
-				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
-				CleanseBanner_ToHeal[client] = false;
-				CleanseBanner_Healer[client] = -1;
-			}
-		}
-	}
-  
 	new banner = GetPlayerWeaponSlot(client, 1);
-		return;
-	if(!CleanseBanner[banner])
-	return;
   	
 	CleanseBanner_NumPlayers[banner] = 0;
-	if(BuffDeployed[client])
+	if(CleanseBanner[banner] && BuffDeployed[client])
 	{
 		new team = GetClientTeam(client);
 		for (new i = 1; i <= MaxClients; i++)
@@ -147,12 +133,29 @@ public static void CleanseBanner_PostThink(client)
 				new Float:distance = GetVectorDistance(Pos1, Pos2);
 				if (distance <= 450.0)
 				{
-					TF2_RemoveCondition(i, TFCond:16);
+					//TF2_RemoveCondition(i, TFCond:16); No longer needed
 					CleanseBanner_ToHeal[i] = true;
 					CleanseBanner_Healer[i] = client;
 					CleanseBanner_NumPlayers[banner]++;
 					//Insert debuff reduction stuff here
 				}
+			}
+		}
+	}
+	//Due to the way the healing works this is how it's done
+	//System tallies up all players in the radius and marks the to be healed
+	//Later, the system will apply the healing after all the players have been tallied up
+	if(CleanseBanner_ToHeal[client])
+	{
+		new healer = CleanseBanner_Healer[client];
+		if(IsValidClient(healer))
+		{
+			new banner = GetPlayerWeaponSlot(healer, 1);
+			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
+			{
+				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
+				CleanseBanner_ToHeal[client] = false;
+				CleanseBanner_Healer[client] = -1;
 			}
 		}
 	}
