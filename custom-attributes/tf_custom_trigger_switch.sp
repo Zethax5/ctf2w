@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Friday, December 21st, 2018
-Last edit made on: Thursday, January 3rd, 2019
+Last edit made on: Tuesday, January 8th, 2019
 Current version: v1.0
 
 Attributes in this pack
@@ -31,6 +31,8 @@ public Plugin:my_info() = {
   url         = ""
 };
 
+new Handle:hudText;
+
 public OnPluginStart() {
   
   for (new i = 1; i < MaxClients; i++)
@@ -40,6 +42,12 @@ public OnPluginStart() {
       
     OnClientPutInServer(i);
   }
+  hudText = CreateHudSynchronizer();
+}
+
+public OnMapStart()
+{
+  PrecacheSound("weapons/vaccinator_toggle.wav", true);
 }
 
 public OnClientPutInServer(client)
@@ -113,6 +121,7 @@ public static void OnClientPostThink(client)
       TF2Attrib_RemoveByName(weapon, "fuse bonus");
       
       DrunkardsWrath_Mode[weapon] = false; //Tells the system the gun is in Precision mode
+      EmitSoundToClient(client, "weapons/vaccinator_toggle.wav"); //Plays a sound
     }
     
     //AoE trigger mode
@@ -131,11 +140,17 @@ public static void OnClientPostThink(client)
       TF2Attrib_RemoveByName(weapon, "stickybomb fizzle time");
       
       DrunkardsWrath_Mode[weapon] = true; //Tells the system gun is in AoE mode
+      EmitSoundToClient(client, "weapons/vaccinator_toggle.wav"); //Plays a sound
     }
     
     //Sets a delay before the player can switch triggers again
     //Mostly to stop spamming
     DrunkardsWrath_Delay[weapon] = GetEngineTime();
+    
+    //Finally, visuals to tell the player what mode they are in
+    //Probably just gonna use hud text for this
+    SetHudTextParams(-1.0, 0.8, 255, 255, 255, 255);
+    ShowSyncHudText(client, hudText, "");
   }
 }
 
