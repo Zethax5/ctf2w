@@ -176,11 +176,11 @@ static void DispenserMinigun(client, weapon)
           //Function that actually heals the player, because Sourcemod and TF2
           //don't provide such a library on their own
           if(DispenserMinigun_Heal[weapon])
-            HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+            HealPlayer(i, client, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * 0.1), _);
           
           //Creates a visual effect on players being healed, similar to the Amputator
           //A team colored ring at their feet
-          TF2_AddCondition(i, TFCond:-1, 0.2, client);
+          TF2_AddCondition(i, TFCond:20, 0.2, client);
           
           //Emits healing sound to players that step into the radius
           if(!DispenserMinigun_InRadius[i])
@@ -192,6 +192,21 @@ static void DispenserMinigun(client, weapon)
       }
     }
   }
+}
+
+//Done for tracking maximum ammo counts
+//Only way I know to do this and it sucks
+public OnEntityCreated(ent, const String:class[])
+{
+  if(ent < 0 || ent > 2048)
+    return;
+
+	if (!StrContains(cls, "tf_weapon_")) CreateTimer(0.3, OnWeaponSpawned, EntIndexToEntRef(Ent));
+}
+
+public Action:OnWeaponSpawned()
+{
+
 }
 
 public OnEntityDestroyed(ent)
