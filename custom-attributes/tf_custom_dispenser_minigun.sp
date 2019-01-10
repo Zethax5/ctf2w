@@ -211,7 +211,13 @@ public Action:OnWeaponSpawned(Handle:timer, any:ref)
 	if(!IsValidEntity(ent) || ent == -1)
 		return;
 	
-	new owner;
+	new owner = GetEntPropEnt(Ent, Prop_Send, "m_hOwnerEntity");
+	if(owner < 0 || owner > MaxClients)
+		return;
+	
+	new String:cls[20];
+	GetEdictClassname(ent, cls, sizeof(cls));
+	
 }
 
 public OnEntityDestroyed(ent)
