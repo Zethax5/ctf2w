@@ -40,7 +40,7 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_VERS "v0.0"
 
-#define SOUND_DISPENSE ""
+#define SOUND_DISPENSE "weapons/dispenser_heal.wav"
 
 public Plugin:my_info = {
   
@@ -159,15 +159,30 @@ static void DispenserMinigun(client, weapon)
     {
       if(IsValidClient(i) && GetClientTeam(i) == GetClientTeam(client))
       {
+        //Gets the position of the valid player in question
         new Float:Pos2[3];
         GetClientAbsOrigin(i, Pos2);
         
+        //Gets the distance between the Heavy and the client
         new Float:distance = GetVectorDistance(Pos1, Pos2);
+        
+        //A check to remove InRadius
+        //Used for sounds
         if(distance > DispenserMinigun_Radius[weapon] && DispenserMinigun_InRadius[i])
           DispenserMinigun_InRadius[i] = false;
+        
         if(distance <= DispenserMinigun_Radius[weapon])
         {
-          HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+          //Function that actually heals the player, because Sourcemod and TF2
+          //don't provide such a library on their own
+          if(DispenserMinigun_Heal[weapon])
+            HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+          
+          //Creates a visual effect on players being healed, similar to the Amputator
+          //A team colored ring at their feet
+          TF2_AddCondition(i, TFCond:-1, 0.2, client);
+          
+          //Emits healing sound to players that step into the radius
           if(!DispenserMinigun_InRadius[i])
           {
             EmitSoundToAll(SOUND_DISPENSE, client);
