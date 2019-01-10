@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
-Last edit made on: Wednesday, January 9th, 2019
+Last edit made on: Thursday, January 10th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -40,6 +40,8 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_VERS "v0.0"
 
+#define SOUND_DISPENSE ""
+
 public Plugin:my_info = {
   
   name        = PLUGIN_NAME,
@@ -76,6 +78,7 @@ new Float:DispenserMinigun_Charge[2049];
 new Float:DispenserMinigun_MaxCharge[2049];
 new Float:DispenserMinigun_FuryDur[2049];
 new bool:DispenserMinigun_InFury[2049];
+new bool:DispenserMinigun_InRadius[MAXPLAYERS + 1];
 
 new bool:DispenserMinigun_Heal[2049];
 new Float:DispenserMinigun_HealRate[2049];
@@ -114,14 +117,14 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
   //The following attributes require "dispenser minigun main" to be present on the weapon with defined values
   //or else they simply won't work.
   
-  else if(StrEqual(attrib, "dispenser minigun heal"))
+  else if(StrEqual(attrib, "dispenser minigun heal") && DispenserMinigun[weapon])
   {
     DispenserMinigun_HealRate[weapon] = StringToFloat(value);
     
     DispenserMinigun_Heal[weapon] = true;
     action = Plugin_Handled;
   }
-  else if(StrEqual(attrib, "dispenser minigun ammo"))
+  else if(StrEqual(attrib, "dispenser minigun ammo") && DispenserMinigun[weapon])
   {
     DispenserMinigun_DispenseRate[weapon] = StringToFloat(value);
     
@@ -142,15 +145,37 @@ public void OnClientPostThink(client)
     return;
   
   if(GetEngineTime() > LastTick[client] + 0.1 && DispenserMinigun[weapon])
-    DispenserMinigun(client);
+    DispenserMinigun(client, weapon);
 }
 
-static void DispenserMinigun(client)
+static void DispenserMinigun(client, weapon)
 {
   new buttons = GetClientButtons(client);
   if((buttons & IN_ATTACK2) == IN_ATTACK2)
   {
-    //Let the fun begin
+    new Float:Pos1[3];
+    GetClientAbsOrigin(client, Pos1);
+    for(new i = 1; i < MaxClients; i++)
+    {
+      if(IsValidClient(i) && GetClientTeam(i) == GetClientTeam(client))
+      {
+        new Float:Pos2[3];
+        GetClientAbsOrigin(i, Pos2);
+        
+        new Float:distance = GetVectorDistance(Pos1, Pos2);
+        if(distance > DispenserMinigun_Radius[weapon] && DispenserMinigun_InRadius[i])
+          DispenserMinigun_InRadius[i] = false;
+        if(distance <= DispenserMinigun_Radius[weapon])
+        {
+          HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+          if(!DispenserMinigun_InRadius[i])
+          {
+            EmitSoundToAll(SOUND_DISPENSE, client);
+            DispenserMinigun_InRadius[i] = true;
+          }
+        }
+      }
+    }
   }
 }
 
