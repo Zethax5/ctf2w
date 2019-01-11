@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
-Last edit made on: Thursday, January 10th, 2019
+Last edit made on: Friday, January 11th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -91,6 +91,10 @@ new Float:MinigunAmmo_DispenseRate[2049];
 //Used to reduce the load on the server heavily
 new Float:LastTick[MAXPLAYERS + 1];
 
+//Tracks maximum ammo on a weapon
+//Used for ammo restoration
+new MaxAmmo[2049];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
@@ -145,7 +149,7 @@ public void OnClientPostThink(client)
 	if(weapon < 0 || weapon > 2048)
 		return;
 	
-	if(GetEngineTime() > LastTick[client] + 0.1 && DispenserMinigun[weapon])
+	if(GetEngineTime() > LastTick[client] + 1.0 && DispenserMinigun[weapon])
 		DispenserMinigun(client, weapon);
 }
 
@@ -169,7 +173,9 @@ static void DispenserMinigun(client, weapon)
 				
 				//A check to remove InRadius
 				//Used for sounds
-				if(distance > DispenserMinigun_Radius[weapon] && DispenserMinigun_InRadius[i])
+				if(distance > DispenserMinigun_Radius[weapon] &&
+				    distance < DispenserMinigun_Radius[weapon] + 10 &&
+				     DispenserMinigun_InRadius[i])
 					DispenserMinigun_InRadius[i] = false;
 				
 				if(distance <= DispenserMinigun_Radius[weapon])
@@ -177,7 +183,7 @@ static void DispenserMinigun(client, weapon)
 					//Function that actually heals the player, because Sourcemod and TF2
 					//don't provide such a library on their own
 					if(DispenserMinigun_Heal[weapon])
-						HealPlayer(i, client, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * 0.1), _);
+						HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
 					
 					//Creates a visual effect on players being healed, similar to the Amputator
 					//A team colored ring at their feet
@@ -189,10 +195,25 @@ static void DispenserMinigun(client, weapon)
 						EmitSoundToAll(SOUND_DISPENSE, client);
 						DispenserMinigun_InRadius[i] = true;
 					}
+					
+					//If the weapon is also set to dispense ammo, this executes
+					if(DispenserMinigun_Ammo[weapon])
+					{
+						for(new j = 1; j <= 3 ; j++)
+						{
+							new wep = GetPlayerWeaponSlot(i, j);
+							if(wep == -1) continue;
+							new ammotype = GetEntProp(wep, Prop_Data, "m_iPrimaryAmmoType");
+							new ammo = MaxAmmo[j] * DispenserMinigun_DispenseRate[weapon];
+							GivePlayerAmmo(i, ammo, ammotype, true);
+						}
+					}
 				}
 			}
 		}
 	}
+	else if((buttons & IN_ATTACK2) != IN_ATTACK2 && DispenserMinigun_InRadius[client])
+		DispenserMinigun_InRadius[client] = false;
 }
 
 //Done for tracking maximum ammo counts
@@ -205,19 +226,15 @@ public OnEntityCreated(ent, const String:class[])
 	if (!StrContains(cls, "tf_weapon_")) CreateTimer(0.3, OnWeaponSpawned, EntIndexToEntRef(Ent));
 }
 
+//Shortly after a weapon spawns, this executes
+//Simply tracks the maximum ammo a weapon has
 public Action:OnWeaponSpawned(Handle:timer, any:ref)
 {
 	new ent = EntRefToEntIndex(ref);
 	if(!IsValidEntity(ent) || ent == -1)
 		return;
 	
-	new owner = GetEntPropEnt(Ent, Prop_Send, "m_hOwnerEntity");
-	if(owner < 0 || owner > MaxClients)
-		return;
-	
-	new String:cls[20];
-	GetEdictClassname(ent, cls, sizeof(cls));
-	
+	MaxAmmo[ent] = GetAmmo_Weapon(ent);
 }
 
 public OnEntityDestroyed(ent)
