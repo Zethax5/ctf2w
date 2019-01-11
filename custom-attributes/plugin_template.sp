@@ -30,3 +30,19 @@ public Plugin:my_info = {
   version     = PLUGIN_VERS,
   url         = ""
 };
+
+public OnPluginStart() {
+ 
+ for(new i = 1 ; i < MaxClients ; i++)
+ {
+  if(!IsValidClient(i))
+   continue;
+  
+  OnClientPutInServer(i);
+ }
+}
+
+public OnClientPutInServer(client)
+{
+
+}
