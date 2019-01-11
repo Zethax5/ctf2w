@@ -95,6 +95,9 @@ new Float:LastTick[MAXPLAYERS + 1];
 //Used for ammo restoration
 new MaxAmmo[2049];
 
+//Used for tracking whether or not a Heavy healed a player last tick
+new LastHealer[MAXPLAYERS + 1];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
@@ -149,12 +152,20 @@ public void OnClientPostThink(client)
 	if(weapon < 0 || weapon > 2048)
 		return;
 	
-	if(GetEngineTime() > LastTick[client] + 1.0 && DispenserMinigun[weapon])
+	if(!DispenserMinigun[weapon])
+		return;
+	
+	if(GetEngineTime() > LastTick[client] + 1.0 && !DispenserMinigun_InFury[weapon])
+		DispenserMinigun(client, weapon);
+	else if(GetEngineTime() > LastTick[client] + 0.5 && DispenserMinigun_InFury[weapon])
 		DispenserMinigun(client, weapon);
 }
 
 static void DispenserMinigun(client, weapon)
 {
+	new Float:radmult = 1.0 + DispenserMinigun_InFury[weapon];
+	new AmountHealed;
+	
 	new buttons = GetClientButtons(client);
 	if((buttons & IN_ATTACK2) == IN_ATTACK2)
 	{
@@ -173,17 +184,18 @@ static void DispenserMinigun(client, weapon)
 				
 				//A check to remove InRadius
 				//Used for sounds
-				if(distance > DispenserMinigun_Radius[weapon] &&
-				    distance < DispenserMinigun_Radius[weapon] + 10 &&
-				     DispenserMinigun_InRadius[i])
+				if(distance > DispenserMinigun_Radius[weapon] * radmult &&
+				    LastHealer[i] == client && DispenserMinigun_InRadius[i])
 					DispenserMinigun_InRadius[i] = false;
 				
-				if(distance <= DispenserMinigun_Radius[weapon])
+				if(distance <= DispenserMinigun_Radius[weapon] * radmult)
 				{
 					//Function that actually heals the player, because Sourcemod and TF2
 					//don't provide such a library on their own
 					if(DispenserMinigun_Heal[weapon])
 						HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+					
+					AmountHealed[weapon] += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
 					
 					//Creates a visual effect on players being healed, similar to the Amputator
 					//A team colored ring at their feet
@@ -208,12 +220,19 @@ static void DispenserMinigun(client, weapon)
 							GivePlayerAmmo(i, ammo, ammotype, true);
 						}
 					}
+					
+					//Helps the system track who did the healing
+					LastHealer[i] = client;
 				}
 			}
 		}
 	}
 	else if((buttons & IN_ATTACK2) != IN_ATTACK2 && DispenserMinigun_InRadius[client])
 		DispenserMinigun_InRadius[client] = false;
+	
+	DispenserMinigun_Charge[weapon] += AmountHealed;
+	if(DispenserMinigun_Charge[weapon] > DispenserMinigun_MaxCharge[weapon])
+		DispenserMinigun_Charge[weapon] = DispenserMinigun_MaxCharge[weapon];
 }
 
 //Done for tracking maximum ammo counts
@@ -254,4 +273,6 @@ public OnEntityDestroyed(ent)
 	
 	DispenserMinigun_Ammo[ent] = false;
 	DispenserMinigun_DispenseRate[ent] = 0.0;
+	
+	MaxAmmo[ent] = 0;
 }
