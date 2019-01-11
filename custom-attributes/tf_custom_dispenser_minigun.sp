@@ -75,8 +75,8 @@ public OnClientPutInServer(client)
 
 new bool:DispenserMinigun[2049];
 new Float:DispenserMinigun_Radius[2049];
-new Float:DispenserMinigun_Charge[2049];
-new Float:DispenserMinigun_MaxCharge[2049];
+new DispenserMinigun_Charge[2049];
+new DispenserMinigun_MaxCharge[2049];
 new Float:DispenserMinigun_FuryDur[2049];
 new bool:DispenserMinigun_InFury[2049];
 new bool:DispenserMinigun_InRadius[MAXPLAYERS + 1];
@@ -115,16 +115,20 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		DispenserMinigun_Radius[weapon] = StringToFloat(values[0]);
-		DispenserMinigun_MaxCharge[weapon] = StringToFloat(values[1]);
+		DispenserMinigun_MaxCharge[weapon] = StringToInt(values[1]);
 		DispenserMinigun_FuryDur[weapon] = StringToFloat(values[2]);
+		
+		if(DispenserMinigun_FuryDur[weapon] > 0.0 && DispenserMinigun_MaxCharge[weapon] > 0)
+		{
+			//insert code here to enable rage meter
+		}
 		
 		DispenserMinigun[weapon] = true;
 		action = Plugin_Handled;
 	}
 	
-	//The following attributes require "dispenser minigun main" to be present on the weapon with defined values
-	//or else they simply won't work.
-	
+	//The following attributes require "dispenser minigun main" to be set on the weapon first
+	//and a defined radius value, or else they simply won't work.
 	else if(StrEqual(attrib, "dispenser minigun heal") && DispenserMinigun[weapon])
 	{
 		DispenserMinigun_HealRate[weapon] = StringToFloat(value);
@@ -230,9 +234,15 @@ static void DispenserMinigun(client, weapon)
 	else if((buttons & IN_ATTACK2) != IN_ATTACK2 && DispenserMinigun_InRadius[client])
 		DispenserMinigun_InRadius[client] = false;
 	
+	//Adds the amount the Heavy healed to the rage meter
 	DispenserMinigun_Charge[weapon] += AmountHealed;
 	if(DispenserMinigun_Charge[weapon] > DispenserMinigun_MaxCharge[weapon])
 		DispenserMinigun_Charge[weapon] = DispenserMinigun_MaxCharge[weapon];
+	
+	if(DispenserMinigun_MaxCharge[weapon] > 0 && DispenserMinigun_Charge[weapon] < DispenserMinigun_MaxCharge[weapon])
+	{
+		//insert code to display rage meter & increase it
+	}
 }
 
 //Done for tracking maximum ammo counts
