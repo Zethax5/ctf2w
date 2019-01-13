@@ -75,11 +75,12 @@ public OnClientPutInServer(client)
 
 new bool:DispenserMinigun[2049];
 new Float:DispenserMinigun_Radius[2049];
-new DispenserMinigun_Charge[2049];
-new DispenserMinigun_MaxCharge[2049];
+new Float:DispenserMinigun_Charge[2049];
+new Float:DispenserMinigun_MaxCharge[2049];
 new Float:DispenserMinigun_FuryDur[2049];
 new bool:DispenserMinigun_InFury[2049];
 new bool:DispenserMinigun_InRadius[MAXPLAYERS + 1];
+new Float:DispenserMinigun_Dur[2049];
 
 new bool:DispenserMinigun_Heal[2049];
 new Float:DispenserMinigun_HealRate[2049];
@@ -115,12 +116,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		DispenserMinigun_Radius[weapon] = StringToFloat(values[0]);
-		DispenserMinigun_MaxCharge[weapon] = StringToInt(values[1]);
+		DispenserMinigun_MaxCharge[weapon] = StringToFloat(values[1]);
 		DispenserMinigun_FuryDur[weapon] = StringToFloat(values[2]);
 		
 		if(DispenserMinigun_FuryDur[weapon] > 0.0 && DispenserMinigun_MaxCharge[weapon] > 0)
 		{
-			//insert code here to enable rage meter
+			TF2Attrib_SetByName(weapon, "generate rage on damage", 1.0);
 		}
 		
 		DispenserMinigun[weapon] = true;
@@ -173,6 +174,7 @@ static void DispenserMinigun(client, weapon)
 	new buttons = GetClientButtons(client);
 	if((buttons & IN_ATTACK2) == IN_ATTACK2)
 	{
+		TF2_AddCondition(client, TFCond:20, 1.0);
 		new Float:Pos1[3];
 		GetClientAbsOrigin(client, Pos1);
 		for(new i = 1; i < MaxClients; i++)
@@ -201,14 +203,16 @@ static void DispenserMinigun(client, weapon)
 					
 					AmountHealed[weapon] += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
 					
-					//Creates a visual effect on players being healed, similar to the Amputator
-					//A team colored ring at their feet
-					TF2_AddCondition(i, TFCond:20, 0.2, client);
-					
 					//Emits healing sound to players that step into the radius
 					if(!DispenserMinigun_InRadius[i])
 					{
-						EmitSoundToAll(SOUND_DISPENSE, client);
+						if(!DispenserMinigun_InFury[weapon])
+							EmitSoundToAll(SOUND_DISPENSE, client);
+						else
+						{
+							EmitSoundToAll(SOUND_DISPENSE, client, _, _, _, _, 120);
+							TF2_AddCondition(i, TFCond:20, 0.6, client);
+						}
 						DispenserMinigun_InRadius[i] = true;
 					}
 					
@@ -235,14 +239,29 @@ static void DispenserMinigun(client, weapon)
 		DispenserMinigun_InRadius[client] = false;
 	
 	//Adds the amount the Heavy healed to the rage meter
-	DispenserMinigun_Charge[weapon] += AmountHealed;
+	if(DispenserMinigun_InFury[weapon])
+		DispenserMinigun_Charge[weapon] += float(AmountHealed);
 	if(DispenserMinigun_Charge[weapon] > DispenserMinigun_MaxCharge[weapon])
 		DispenserMinigun_Charge[weapon] = DispenserMinigun_MaxCharge[weapon];
 	
+	//For dealing with the Dispensing Fury triggers and actually displaying rage with the in-game Rage meter
 	if(DispenserMinigun_MaxCharge[weapon] > 0 && DispenserMinigun_Charge[weapon] < DispenserMinigun_MaxCharge[weapon])
 	{
-		//insert code to display rage meter & increase it
+		if(GetEntProp(client, Prop_Send, "m_bRageDraining"))
+		{
+			DispenserMinigun_Charge[weapon] = 0.0;
+			DispenserMinigun_InFury[weapon] = true; //Tells the system this guy is dispensing like mad
+			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
+		}
+		//converts to a percentage from 0 to 100 rather than from 0 to 1
+		new Float:rage = (DispenserMinigun_Charge[weapon] / DispenserMinigun_MaxCharge[weapon]) * 100.0;
+		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage); //Actually updates rage
 	}
+	
+	//Deals with pulling the player out of mad dispensing when they're done
+	if(DispenserMinigun_InFury[weapon] && GetEngineTime() > DispenserMinigun_Dur[weapon] + DispenserMinigun_FuryDur[weapon])
+		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
+							//Allows him to gain rage again
 }
 
 //Done for tracking maximum ammo counts
