@@ -54,6 +54,8 @@ new bool:EvasionMeter[2049];
 new Float:EvasionMeter_Gain[2049];
 new Float:EvasionMeter_Subtract[2049];
 new Float:EvasionMeter_SubtractMelee[2049];
+new Float:EvasionMeter_Charge[2049];
+new Float:EvasionMeter_Drain[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -68,17 +70,47 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
   
   if(StrEqual(attrib, "gain evasion on hit"))
   {
-    new String:values[3][10];
+    new String:values[4][10];
     ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
     
     EvasionMeter_Gain[weapon] = StringToFloat(values[0]);
     EvasionMeter_Subtract[weapon] = StringToFloat(values[1]);
     EvasionMeter_SubtractMelee[weapon] = StringToFloat(values[2]);
+    EvasionMeter_Drain[weapon] = StringToFloat(values[3]);
     
     EvasionMeter[weapon] = true;
     action = Plugin_Handled;
   }
   
+  return action;
+}
+
+public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+{
+  new Action:action;
+  if(attacker && victim)
+  {
+    if(EvasionMeter[weapon])
+    {
+      EvasionMeter_Charge[weapon] += EvasionMeter_Gain[weapon];
+      if(EvasionMeter_Charge[weapon] > 1.0)
+        EvasionMeter_Charge[weapon] = 1.0;
+    }
+    if(EvasionMeter[GetActiveWeapon(victim)])
+    {
+      new wep = GetActiveWeapon(victim);
+      if(EvasionMeter_Charge[wep] >= RandomFloat(0.0, 1.0))
+      {
+        new Float:drain = EvasionMeter_Subtract[wep];
+        if(weapon == GetPlayerWeaponSlot(attacker, 2)
+          drain = EvasionMeter_SubtractMelee[wep];
+        
+        EvasionMeter_Charge[wep] -= damage / drain / 100.0;
+        damage = 0.0;
+        action = Plugin_Changed;
+      } 
+    }
+  }
   return action;
 }
 
@@ -91,4 +123,6 @@ public OnEntityDestroyed(ent)
   EvasionMeter_Gain[ent] = 0.0;
   EvasionMeter_Subtract[ent] = 0.0;
   EvasionMeter_SubtractMelee[ent] = 0.0;
+  EvasionMeter_Charge[ent] = 0.0;
+  EvasionMeter_Drain[ent] = 0.0;
 }
