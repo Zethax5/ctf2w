@@ -114,6 +114,32 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
   return action;
 }
 
+public void OnClientPreThink(client)
+{
+  if(!IsValidClient(client))
+    return;
+  
+  new weapon = GetActiveWeapon(client);
+  if(weapon < 0 || weapon > 2048)
+    return;
+  
+  if(!EvasionMeter[weapon])
+    return;
+  
+  if(GetEngineTime() > LastTick[client] + 0.1)
+    EvasionMeter_PreThink(client, weapon);
+}
+
+static void EvasionMeter_PreThink(client, weapon);
+{
+  if(EvasionMeter_Charge[weapon] > 0.0 && EvasionMeter_Drain[weapon] > 0.0)
+  {
+    EvasionMeter_Charge[weapon] -= EvasionMeter_Drain[weapon] / 0.1;
+    if(EvasionMeter_Charge[weapon] < 0.0)
+      EvasionMeter_Charge[weapon] = 0.0;
+  }
+}
+
 public OnEntityDestroyed(ent)
 {
   if(ent < 0 || ent > 2048)
