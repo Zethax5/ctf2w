@@ -61,11 +61,13 @@ new bool:DrunkardsWrath[2049];
 new bool:DrunkardsWrath_Mode[2049];
 new Float:DrunkardsWrath_Delay[2049];
 
+new Float:LastTick[MAXPLAYERS + 1];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
   new Action:action;
   
-  if(!StrEqual(attrib, "tf_custom_trigger_switch"))
+  if(!StrEqual(plugin, "tf_custom_trigger_switch"))
     return Plugin_Continue;
   
   new weapon = GetPlayerWeaponSlot(client, slot);
@@ -91,7 +93,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public OnClientPostThink(client)
 {
-  DrunkardsWrath_PostThink(client);
+	if(GetEngineTime() > LastTick[client] + 0.1)
+		DrunkardsWrath_PostThink(client);
 }
 
 static void DrunkardsWrath_PostThink(client)
@@ -149,11 +152,15 @@ static void DrunkardsWrath_PostThink(client)
     //Mostly to stop spamming
     DrunkardsWrath_Delay[weapon] = GetEngineTime();
     
-    //Finally, visuals to tell the player what mode they are in
-    //Probably just gonna use hud text for this
-    SetHudTextParams(-1.0, 0.8, 0.2, 255, 255, 255, 255);
-    ShowSyncHudText(client, hudText, "");
   }
+  //Finally, visuals to tell the player what mode they are in
+  //Probably just gonna use hud text for this
+  SetHudTextParams(-1.0, 0.8, 0.2, 255, 255, 255, 255);
+  if(!DrunkardsWrath_Mode[weapon])
+    	ShowSyncHudText(client, hudText, "Firing mode: Precision");
+  if(DrunkardsWrath_Mode[weapon])
+    	ShowSyncHudText(client, hudText, "Firing mode: Area of Effect");
+    LastTick[client] = GetEngineTime();
 }
 
 public OnEntityDestroyed(ent)
