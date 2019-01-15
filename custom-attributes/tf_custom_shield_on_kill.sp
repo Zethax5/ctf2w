@@ -58,6 +58,7 @@ public Plugin:my_info = {
 public OnPluginStart() {
   	
 	HookEvent("player_death", OnPlayerDeath);
+	HookEvent("post_inventory_application", OnTouchResupply);
   	
 	for (new i = 1; i <= MaxClients; i++)
 	{
@@ -66,7 +67,6 @@ public OnPluginStart() {
 		
 		OnClientPutInServer(i);
 	}
-  
 }
 
 public OnClientPutInServer(client)
@@ -280,6 +280,31 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	return action;
 }
 
+public Action:OnTouchResupply(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	
+	if(client < 0 || client > MAXPLAYERS)
+		return;
+	
+	if(ShieldOnKill[client])
+	{
+		CreateTimer(0.0, RemoveParticle, ShieldOnKill_Particle[client]);
+		ShieldOnKill[client]          = false;
+		ShieldOnKill_Resist[client]   = 0.0;
+		ShieldOnKill_MaxDmg[client]   = 0.0;
+		ShieldOnKill_Particle[client] = 0;
+		
+		if(ShieldExplodes[client])
+		{
+			ShieldExplodes[client] 		   = false;
+			ShieldExplodes_Radius[client]  = 0.0;
+			ShieldExplodes_MaxDmg[client]  = 0.0;
+			ShieldExplodes_Falloff[client] = 0.0;
+		}
+	}
+}
+
 public OnEntityDestroyed(ent)
 {
 	if(ent < 0 || ent > 2049) return;
@@ -292,24 +317,4 @@ public OnEntityDestroyed(ent)
 	ShieldExplodes_Radius[ent] = 0.0;
 	ShieldExplodes_MaxDmg[ent] = 0.0;
 	ShieldExplodes_Falloff[ent] = 0.0;
-}
-
-
-//Miscellaneous stuff
-
-//Removes particles when called
-public Action:RemoveParticle(Handle:timer, any:particle) //Chawlz' code
-{
-	if(particle >= 0 && IsValidEntity(particle))
-	{
-		new String:classname[32];
-		GetEdictClassname(particle, classname, sizeof(classname));
-		if(StrEqual(classname, "info_particle_system", false))
-		{
-			AcceptEntityInput(particle, "Stop");
-			AcceptEntityInput(particle, "Kill");
-			AcceptEntityInput(particle, "Deactivate");
-			particle = -1;
-		}
-	}
 }
