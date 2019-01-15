@@ -111,6 +111,33 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
   }
 }
 
+public OnClientPreThink(client)
+{
+  if(!IsValidClient(client))
+    return;
+  
+  new weapon = GetActiveWeapon(client);
+  if(weapon < 0 || weapon > 2048)
+    return;
+  
+  if(!KillsBoost[weapon])
+    return;
+  
+  if(GetEngineTime() > LastTick[client] + 0.1)
+    KillsBoost_PreThink(client, weapon);
+}
+
+static void KillsBoost_PreThink(client, weapon)
+{
+  if(TF2_IsPlayerInCondition(client, TFCond:0) && KillsBoost_StoredDur[weapon] > 0.0)
+  {
+    TF2_AddCondition(client, TFCond:KillsBoost_Condition[weapon], 0.2);
+    KillsBoost_StoredDur[weapon] -= 0.1;
+  }
+  
+  LastTick[client] = GetEngineTime();
+}
+
 public OnEntityDestroyed(ent)
 {
   if(ent < 0 || ent > 2048)
