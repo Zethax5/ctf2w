@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Wednesday, December 19th, 2018
-Last edit made on: Thursday, December 20th, 2018
+Last edit made on: Sunday, January 14th, 2018
 Current version: v1.0
 
 Attributes in this plugin:
@@ -29,9 +29,11 @@ Attributes in this plugin:
 #include <sourcemod>
 #include <cw3-attributes>
 #include <tf2>
-#include <zethax>
 #include <sdkhooks>
 #include <sdktools>
+#include <tf2_stocks>
+//#include <smlib>
+#include <zethax>
 
 #define PLUGIN_AUTHOR           "Zethax"
 #define PLUGIN_DESC             "Yet another pack of attributes I've made for Crafting and his servers"
@@ -42,12 +44,13 @@ Attributes in this plugin:
 #define PARTICLE_EXPLODE        "ExplosionCore_Wall"
 
 #define SOUND_EXPLODE 					"weapons/explode1.wav"
+#define SOUND_SHIELD					"items/powerup_pickup_supernova.wav"
 
 public Plugin:my_info = {
   
   name          = PLUGIN_NAME,
   author        = PLUGIN_AUTHOR,
-  description   = PLUGIN_DESCRIPTION,
+  description   = PLUGIN_DESC,
   version       = PLUGIN_VERSION,
   url           = ""
 };
@@ -74,7 +77,9 @@ public OnClientPutInServer(client)
 public OnMapStart() {
   
 	PrecacheSound(SOUND_EXPLODE, true);
+	PrecacheSound(SOUND_SHIELD, true);
 	PrecacheParticle(PARTICLE_SHIELD);
+	PrecacheParticle(PARTICLE_EXPLODE);
 }
 
 new bool:ShieldOnKill[2049];
@@ -101,6 +106,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 	if(StrEqual(attrib, "shield on kill"))
 	{
+		//PrintToChat(client, "applying shield on kill");
 		new String:values[2][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
     
@@ -108,67 +114,107 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ShieldOnKill_MaxDmg[weapon] = StringToFloat(values[1]);
 		
 		ShieldOnKill[weapon] = true;
+		ShieldOnKill[client] = false;
 		action = Plugin_Handled;
 	}
-	else if(StrEqual(attrib, "shield explodes when destroyed"))
+	else if(StrEqual(attrib, "shield explodes when destroyed") && ShieldOnKill[weapon])
 	{
+		//PrintToChat(client, "applying explosive shield");
 		new String:values[3][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
     
 		ShieldExplodes_Radius[weapon]  = StringToFloat(values[0]);
 		ShieldExplodes_MaxDmg[weapon]  = StringToFloat(values[1]);
-		ShieldExplodes_Falloff[weapon] = StringToFloat(Values[2]);
+		ShieldExplodes_Falloff[weapon] = StringToFloat(values[2]);
     		
 		ShieldExplodes[weapon] = true;
 		action = Plugin_Handled;
 	}
   
-  return action; 
+	return action; 
 }
 
-public void OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	new vict = GetClientOfUserId(GetEventInt(event, "userid"));
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new weapon = GetEventInt(event, "weaponid");
+	new weapon = LastWeaponHurtWith[attacker];
 	
-	if(attacker && victim)
+	//PrintToChat(attacker, "A DEATH HAS BEEN DETECTED");
+	
+	if(attacker && vict)
 	{
-		if(weapon > 0 || weapon < 2049)
+		if(ShieldOnKill[weapon] && !ShieldOnKill[attacker])
 		{
-			if(ShieldOnKill[weapon] && !ShieldOnKill[attacker])
+			//PrintToChat(attacker, "Initializing shield");
+			ShieldOnKill[attacker]           = true;
+			ShieldOnKill_Resist[attacker]    = ShieldOnKill_Resist[weapon];
+			ShieldOnKill_MaxDmg[attacker]    = ShieldOnKill_MaxDmg[weapon];
+			ShieldOnKill_Particle[attacker]  = AttachParticle(attacker, PARTICLE_SHIELD, -1.0);
+			EmitSoundToClient(attacker, SOUND_SHIELD);
+			
+			if(ShieldExplodes[weapon])
 			{
-				ShieldOnKill[attacker]           = true;
-				ShieldOnKill_Resist[attacker]    = ShieldOnKill_Resist[weapon];
-				ShieldOnKill_MaxDmg[attacker]    = ShieldOnKill_MaxDmg[weapon];
-				ShieldOnKill_Particle[attacker]  = AttachParticle(attacker, PARTICLE_SHIELD, -1.0);
-				
-				if(ShieldExplodes[weapon])
-				{
-					ShieldExplodes[attacker]          = true;
-					ShieldExplodes_Radius[attacker]   = ShieldExplodes_Radius[weapon];
-					ShieldExplodes_MaxDmg[attacker]   = ShieldExplodes_MaxDmg[weapon];
-					ShieldExplodes_Falloff[attacker]  = ShieldExplodes_Falloff[weapon];
-				}
+				//PrintToChat(attacker, "initializing explosive shield");
+				ShieldExplodes[attacker]          = true;
+				ShieldExplodes_Radius[attacker]   = ShieldExplodes_Radius[weapon];
+				ShieldExplodes_MaxDmg[attacker]   = ShieldExplodes_MaxDmg[weapon];
+				ShieldExplodes_Falloff[attacker]  = ShieldExplodes_Falloff[weapon];
 			}
-			if(ShieldOnKill[victim])
+			//PrintToChat(attacker, "Shield set");
+		}
+		if(ShieldOnKill[vict])
+		{
+			//PrintToChat(victim, "destroying shield");
+			CreateTimer(0.0, RemoveParticle, ShieldOnKill_Particle[vict]);
+			ShieldOnKill[vict]          = false;
+			ShieldOnKill_Resist[vict]   = 0.0;
+			ShieldOnKill_MaxDmg[vict]   = 0.0;
+			ShieldOnKill_Particle[vict] = 0;
+			
+			if(ShieldExplodes[vict])
 			{
-				CreateTimer(0.0, RemoveParticle, ShieldOnKill_Particle[victim]);
-				ShieldOnKill[victim]          = false;
-				ShieldOnKill_Resist[victim]   = 0.0;
-				ShieldOnKill_MaxDmg[victim]   = 0.0;
-				ShieldOnKill_Particle[victim] = 0;
-				
-				if(ShieldExplodes[victim])
+				//PrintToChat(victim, "detonating shield");
+				CreateTimer(0.0, RemoveParticle, ShieldOnKill_Particle[vict]);
+				ShieldOnKill[vict]          = false;
+				ShieldOnKill_Resist[vict]   = 0.0;
+				ShieldOnKill_MaxDmg[vict]   = 0.0;
+				ShieldOnKill_Particle[vict] = 0;
+         
+				if(ShieldExplodes[vict])
 				{
-					ShieldExplodes[victim] 	       = false;
-					ShieldExplodes_Radius[victim]  = 0.0;
-					ShieldExplodes_MaxDmg[victim]  = 0.0;
-					ShieldExplodes_Falloff[victim] = 0.0;
+					//PrintToChat(victim, "detonating shield");
+					for(new i = 1; i < MaxClients; i++)
+					{
+						new Float:Pos1[3];
+						GetClientAbsOrigin(vict, Pos1);
+						if(IsValidClient(i) && GetClientTeam(i) != GetClientTeam(vict))
+						{
+							new Float:Pos2[3];
+							GetClientAbsOrigin(i, Pos2);
+							
+							new Float:distance = GetVectorDistance(Pos1, Pos2);
+               
+							if(distance < ShieldExplodes_Radius[vict])
+							{
+								new ExplosionDamage = RoundToFloor(ShieldExplodes_MaxDmg[vict] * (1.0 - ((distance / ShieldExplodes_Radius[vict]) * ShieldExplodes_Falloff[vict])));
+								DealDamage(i, ExplosionDamage, vict, _, "shield explosion");
+							}
+						}
+					}
+					
+					SpawnParticle(vict, _, PARTICLE_EXPLODE);
+					EmitSoundToAll(SOUND_EXPLODE, vict);
+					
+					ShieldExplodes[vict]         = false;
+					ShieldExplodes_Radius[vict]  = 0.0;
+					ShieldExplodes_MaxDmg[vict]  = 0.0;
+					ShieldExplodes_Falloff[vict] = 0.0;
 				}
-			}
+			}//PrintToChat(victim, "shield destroyed");
 		}
 	}
+	return Plugin_Continue;
 }
 
 
@@ -181,10 +227,13 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		{
 			if(ShieldOnKill[victim])
 			{
+				//PrintToChat(victim, "damage resisted");
 				damage *= 1.0 - ShieldOnKill_Resist[victim];
+				action = Plugin_Changed;
         			
 				if(damage > ShieldOnKill_MaxDmg[victim])
 				{
+					//PrintToChat(victim, "destroying shield");
 					CreateTimer(0.0, RemoveParticle, ShieldOnKill_Particle[victim]);
 					ShieldOnKill[victim]          = false;
 					ShieldOnKill_Resist[victim]   = 0.0;
@@ -193,6 +242,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
           
 					if(ShieldExplodes[victim])
 					{
+						//PrintToChat(victim, "detonating shield");
 						for(new i = 1; i < MaxClients; i++)
 						{
 							new Float:Pos1[3];
@@ -207,21 +257,23 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 								if(distance < ShieldExplodes_Radius[victim])
 								{
 									new ExplosionDamage = RoundToFloor(ShieldExplodes_MaxDmg[victim] * (1.0 - ((distance / ShieldExplodes_Radius[victim]) * ShieldExplodes_Falloff[victim])));
-									DealDamage(i, ShieldExplodes_MaxDmg[victim], victim, _, "shield explosion");
+									DealDamage(i, ExplosionDamage, victim, _, "shield explosion");
 								}
 							}
 						}
 						
-						SpawnParticle(client, PARTICLE_EXPLODE);
-						EmitSoundToAll(SOUND_EXPLODE, client);
+						SpawnParticle(victim, _, PARTICLE_EXPLODE);
+						EmitSoundToAll(SOUND_EXPLODE, victim);
 						
 						ShieldExplodes[victim]         = false;
 						ShieldExplodes_Radius[victim]  = 0.0;
 						ShieldExplodes_MaxDmg[victim]  = 0.0;
 						ShieldExplodes_Falloff[victim] = 0.0;
 					}
+					//PrintToChat(victim, "shield destroyed");
 				}
 			}
+			LastWeaponHurtWith[attacker] = weapon;
 		}
 	}
 	

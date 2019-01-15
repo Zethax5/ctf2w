@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
-Last edit made on: Friday, January 12th, 2019
+Last edit made on: Sunday, January 13th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -34,7 +34,11 @@ Attributes in this pack:
 #include <sourcemod>
 #include <cw3-attributes>
 #include <tf2>
+#include <tf2_stocks>
+#include <sdkhooks>
+#include <sdktools>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "Dispenser Minigun"
 #define PLUGIN_DESC "Creates the attributes associated with the dispenser minigun"
@@ -86,7 +90,7 @@ new bool:DispenserMinigun_Heal[2049];
 new Float:DispenserMinigun_HealRate[2049];
 
 new bool:DispenserMinigun_Ammo[2049];
-new Float:MinigunAmmo_DispenseRate[2049];
+new Float:DispenserMinigun_DispenseRate[2049];
 
 //Tracks last time a player performed a healing tick
 //Used to reduce the load on the server heavily
@@ -159,20 +163,25 @@ public void OnClientPostThink(client)
 	
 	if(!DispenserMinigun[weapon])
 		return;
+		
+	new Float:rage = (DispenserMinigun_Charge[weapon] / DispenserMinigun_MaxCharge[weapon]) * 100.0;
+	SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage);
 	
 	if(GetEngineTime() > LastTick[client] + 1.0 && !DispenserMinigun_InFury[weapon])
-		DispenserMinigun(client, weapon);
+		DispenserMinigun_PostThink(client, weapon);
 	else if(GetEngineTime() > LastTick[client] + 0.5 && DispenserMinigun_InFury[weapon])
-		DispenserMinigun(client, weapon);
+		DispenserMinigun_PostThink(client, weapon);
 }
 
-static void DispenserMinigun(client, weapon)
+static void DispenserMinigun_PostThink(client, weapon)
 {
-	new Float:radmult = 1.0 + DispenserMinigun_InFury[weapon];
+	new Float:radmult = 1.0;
+	if(DispenserMinigun_InFury[weapon])
+		radmult++;
 	new AmountHealed;
 	
 	new buttons = GetClientButtons(client);
-	if((buttons & IN_ATTACK2) == IN_ATTACK2)
+	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
 		TF2_AddCondition(client, TFCond:20, 1.0);
 		new Float:Pos1[3];
@@ -192,16 +201,29 @@ static void DispenserMinigun(client, weapon)
 				//Used for sounds
 				if(distance > DispenserMinigun_Radius[weapon] * radmult &&
 				    LastHealer[i] == client && DispenserMinigun_InRadius[i])
+				{
 					DispenserMinigun_InRadius[i] = false;
+				}
 				
 				if(distance <= DispenserMinigun_Radius[weapon] * radmult)
 				{
+					
+					//Gotta check to see if the healing target is under max health first
+					if(GetClientHealth(i) < GetClientMaxHealth(i))
+					{
+						AmountHealed += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
+						new Float:position[3];
+						position[2] += 75;
+						if(GetClientTeam(i) == TFTeam_Blue)
+							SpawnParticle(i, position, "healthgained_blu");
+						if(GetClientTeam(i) == TFTeam_Red)
+							SpawnParticle(i, position, "healthgained_blu");
+					}
+					
 					//Function that actually heals the player, because Sourcemod and TF2
 					//don't provide such a library on their own
 					if(DispenserMinigun_Heal[weapon])
-						HealPlayer(i, client, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
-					
-					AmountHealed[weapon] += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
+						HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
 					
 					//Emits healing sound to players that step into the radius
 					if(!DispenserMinigun_InRadius[i])
@@ -211,21 +233,26 @@ static void DispenserMinigun(client, weapon)
 						else
 						{
 							EmitSoundToAll(SOUND_DISPENSE, client, _, _, _, _, 120);
-							TF2_AddCondition(i, TFCond:20, 0.6, client);
 						}
 						DispenserMinigun_InRadius[i] = true;
 					}
+					if(DispenserMinigun_InFury[weapon])
+						TF2_AddCondition(i, TFCond:20, 0.6, client);
 					
 					//If the weapon is also set to dispense ammo, this executes
 					if(DispenserMinigun_Ammo[weapon])
 					{
-						for(new j = 1; j <= 3 ; j++)
+						for(new j = 0; j <= 3 ; j++)
 						{
 							new wep = GetPlayerWeaponSlot(i, j);
 							if(wep == -1) continue;
 							new ammotype = GetEntProp(wep, Prop_Data, "m_iPrimaryAmmoType");
-							new ammo = MaxAmmo[j] * DispenserMinigun_DispenseRate[weapon];
-							GivePlayerAmmo(i, ammo, ammotype, true);
+							new ammo = RoundFloat(MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon]);
+							
+							//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
+							
+							GivePlayerAmmo(i, ammo, ammotype, false);
+							//PrintToChat(client, "ammo dispensed");
 						}
 					}
 					
@@ -236,32 +263,76 @@ static void DispenserMinigun(client, weapon)
 		}
 	}
 	else if((buttons & IN_ATTACK2) != IN_ATTACK2 && DispenserMinigun_InRadius[client])
+	{
 		DispenserMinigun_InRadius[client] = false;
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+	}
 	
 	//Adds the amount the Heavy healed to the rage meter
-	if(DispenserMinigun_InFury[weapon])
-		DispenserMinigun_Charge[weapon] += float(AmountHealed);
+	if(!DispenserMinigun_InFury[weapon])
+		DispenserMinigun_Charge[weapon] += AmountHealed;
 	if(DispenserMinigun_Charge[weapon] > DispenserMinigun_MaxCharge[weapon])
 		DispenserMinigun_Charge[weapon] = DispenserMinigun_MaxCharge[weapon];
 	
 	//For dealing with the Dispensing Fury triggers and actually displaying rage with the in-game Rage meter
-	if(DispenserMinigun_MaxCharge[weapon] > 0 && DispenserMinigun_Charge[weapon] < DispenserMinigun_MaxCharge[weapon])
+	if(DispenserMinigun_MaxCharge[weapon] > 0.0)
 	{
-		if(GetEntProp(client, Prop_Send, "m_bRageDraining"))
+		if(GetEntProp(client, Prop_Send, "m_bRageDraining") && !DispenserMinigun_InFury[weapon])
 		{
+			//PrintToChat(client, "this guy dispensing");
 			DispenserMinigun_Charge[weapon] = 0.0;
 			DispenserMinigun_InFury[weapon] = true; //Tells the system this guy is dispensing like mad
 			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
+			
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			DispenserMinigun_InRadius[client] = false;
 		}
-		//converts to a percentage from 0 to 100 rather than from 0 to 1
-		new Float:rage = (DispenserMinigun_Charge[weapon] / DispenserMinigun_MaxCharge[weapon]) * 100.0;
-		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage); //Actually updates rage
 	}
 	
 	//Deals with pulling the player out of mad dispensing when they're done
 	if(DispenserMinigun_InFury[weapon] && GetEngineTime() > DispenserMinigun_Dur[weapon] + DispenserMinigun_FuryDur[weapon])
+	{
 		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
 							//Allows him to gain rage again
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		DispenserMinigun_InRadius[client] = false;
+	}
+	
+	//Finally, resets the delay on this mf
+	LastTick[client] = GetEngineTime();
 }
 
 //Done for tracking maximum ammo counts
@@ -271,7 +342,8 @@ public OnEntityCreated(ent, const String:class[])
 	if(ent < 0 || ent > 2048)
 		return;
 
-	if (!StrContains(cls, "tf_weapon_")) CreateTimer(0.3, OnWeaponSpawned, EntIndexToEntRef(Ent));
+	if (!StrContains(class, "tf_weapon_")) 
+		CreateTimer(0.3, OnWeaponSpawned, EntIndexToEntRef(ent));
 }
 
 //Shortly after a weapon spawns, this executes
@@ -281,8 +353,10 @@ public Action:OnWeaponSpawned(Handle:timer, any:ref)
 	new ent = EntRefToEntIndex(ref);
 	if(!IsValidEntity(ent) || ent == -1)
 		return;
+	//PrintToChatAll("weapon initializing");
 	
 	MaxAmmo[ent] = GetAmmo_Weapon(ent);
+	//PrintToChatAll("Stored max ammo count at %i", MaxAmmo[ent]);
 }
 
 public OnEntityDestroyed(ent)

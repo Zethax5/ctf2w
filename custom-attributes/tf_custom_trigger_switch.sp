@@ -16,13 +16,15 @@ Attributes in this pack
 #include <tf2>
 #include <sdkhooks>
 #include <sdktools>
+#include <tf2attributes>
+#include <zethax>
 
 #define PLUGIN_AUTHOR   "Zethax"
 #define PLUGIN_DESC     "Custom attributes used on custom Demoman weapons on the cTF2w servers."
 #define PLUGIN_VERS     "v1.0"
 #define PLUGIN_NAME     "Trigger Switch Attribute"
 
-public Plugin:my_info() = {
+public Plugin:my_info = {
 
   name        = PLUGIN_NAME,
   description = PLUGIN_DESC,
@@ -59,7 +61,7 @@ new bool:DrunkardsWrath[2049];
 new bool:DrunkardsWrath_Mode[2049];
 new Float:DrunkardsWrath_Delay[2049];
 
-public Action:CW3_OnAddAttribute(slot, client, const String:attrib, const String:plugin, const String:value, bool:whileActive)
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
   new Action:action;
   
@@ -92,7 +94,7 @@ public OnClientPostThink(client)
   DrunkardsWrath_PostThink(client);
 }
 
-public static void OnClientPostThink(client)
+static void DrunkardsWrath_PostThink(client)
 {
   if(!IsValidClient(client))
     return;
@@ -149,7 +151,7 @@ public static void OnClientPostThink(client)
     
     //Finally, visuals to tell the player what mode they are in
     //Probably just gonna use hud text for this
-    SetHudTextParams(-1.0, 0.8, 255, 255, 255, 255);
+    SetHudTextParams(-1.0, 0.8, 0.2, 255, 255, 255, 255);
     ShowSyncHudText(client, hudText, "");
   }
 }
@@ -159,6 +161,6 @@ public OnEntityDestroyed(ent)
   if(ent < 0 || ent > 2048)
     return;
   
-  DrunkardsWrath[weapon] = false;
-  DrunkardsWrath_Mode[weapon] = false;
+  DrunkardsWrath[ent] = false;
+  DrunkardsWrath_Mode[ent] = false;
 }

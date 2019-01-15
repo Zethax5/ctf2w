@@ -14,8 +14,9 @@ Attributes in this pack:
 #include <sourcemod>
 #include <cw3-attributes>
 #include <tf2>
-#include <zethax>
 #include <sdkhooks>
+#include <sdktools>
+#include <zethax>
 #include <tf2attributes>
 
 #define PLUGIN_AUTHOR  "Zethax"
@@ -51,7 +52,7 @@ public OnClientPutInServer(client) {
 }
 
 //Used to track whether or not a player has deployed a custom buff banner
-new bool:BuffDeployed[MAXPLAYERS + 1]
+new bool:BuffDeployed[MAXPLAYERS + 1];
 
 new bool:CleanseBanner[2049];
 new Float:CleanseBanner_DebuffRed[2049];
@@ -59,6 +60,8 @@ new CleanseBanner_Healing[2049];
 new CleanseBanner_NumPlayers[2049];
 new bool:CleanseBanner_ToHeal[MAXPLAYERS + 1];
 new CleanseBanner_Healer[MAXPLAYERS + 1];
+new CleanseBanner_Delay[2049];
+new bool:BuffRemoved[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -80,7 +83,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
       CleanseBanner_Healing[weapon] = StringToInt(values[1]);
       
       //Enables the rage meter and what not
-      TF2Attrib_SetByName(weapon, "mod soldier buff type", 5.0);
+      TF2Attrib_SetByName(weapon, "mod soldier buff type", 1.0);
       TF2Attrib_SetByName(weapon, "kill eater score type", 51.0);
       
       CleanseBanner[weapon] = true;
@@ -111,12 +114,15 @@ public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBr
     BuffDeployed[client] = false;
 }
 
-public static void CleanseBanner_PostThink(client)
+static void CleanseBanner_PostThink(client)
 {
 	if(!IsValidClient(client))
 		return;
   
 	new banner = GetPlayerWeaponSlot(client, 1);
+  	
+  	
+  		TF2Attrib_SetByName(weapon, "mod soldier buff type", 420.0);
   	
 	CleanseBanner_NumPlayers[banner] = 0;
 	if(CleanseBanner[banner] && BuffDeployed[client])
@@ -159,4 +165,15 @@ public static void CleanseBanner_PostThink(client)
 			}
 		}
 	}
+}
+
+public OnEntityDestroyed(ent)
+{
+	if(ent < 0 || ent > 2048)
+		return;
+	
+	CleanseBanner[ent] = false;
+	CleanseBanner_NumPlayer[ent] = 0;
+	CleanseBanner_DebuffRed[ent] = 0.0;
+	CleanseBanner_Healing[ent] = 0;
 }
