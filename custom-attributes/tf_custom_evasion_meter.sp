@@ -6,7 +6,12 @@ Last edit made on: January 14th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+ - "gain evasion on hit"
+    Values that scale from 0.0 to 1.0 mean 0.0 is 0% and 1.0 is 100%
+    1) Evasion to add per hit, on scale from 0.0 to 1.0
+    2) % of damage that would have been taken to subtract from evasion, on scale from 0.0 to 1.0
+    3) % of damage that would have been taken from melee to subtract from evasion, on scale from 0.0 to 1.0
+    4) % of evasion to drain per second while the weapon is active, from 0.0 to 1.0
 
 */
 
@@ -23,6 +28,9 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds custom attributes associated with the evasion meter"
 #define PLUGIN_VERS "v0.0"
+
+#define PARTICLE_DODGE "miss_text"
+#define SOUND_DODGE "weapons/cleaver_throw.wav"
 
 public Plugin:my_info = {
   
@@ -48,6 +56,12 @@ public OnClientPutInServer(client)
 {
   SDKHook(client, SDKHook_PreThink, OnClientPreThink);
   SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+}
+
+public OnMapStart()
+{
+  PrecacheParticle(PARTICLE_DODGE);
+  PrecacheSound(SOUND_DODGE, true);
 }
 
 new bool:EvasionMeter[2049];
@@ -78,6 +92,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     EvasionMeter_SubtractMelee[weapon] = StringToFloat(values[2]);
     EvasionMeter_Drain[weapon] = StringToFloat(values[3]);
     
+    //Initializes ammo counter
+    SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
+		  SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+    
     EvasionMeter[weapon] = true;
     action = Plugin_Handled;
   }
@@ -106,6 +124,11 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
           drain = EvasionMeter_SubtractMelee[wep];
         
         EvasionMeter_Charge[wep] -= damage / drain / 100.0;
+        new Float:Pos[3];
+        Pos[2] += 75;
+        SpawnParticle(victim, Pos, PARTICLE_DODGE);
+        EmitSoundToAll(client, SOUND_DODGE);
+        
         damage = 0.0;
         action = Plugin_Changed;
       } 
@@ -134,10 +157,12 @@ static void EvasionMeter_PreThink(client, weapon);
 {
   if(EvasionMeter_Charge[weapon] > 0.0 && EvasionMeter_Drain[weapon] > 0.0)
   {
-    EvasionMeter_Charge[weapon] -= EvasionMeter_Drain[weapon] / 0.1;
+    EvasionMeter_Charge[weapon] -= EvasionMeter_Drain[weapon] * 0.1;
     if(EvasionMeter_Charge[weapon] < 0.0)
       EvasionMeter_Charge[weapon] = 0.0;
   }
+  //Sets weapon to display evasion
+  SetEntProp(weapon, Prop_Send, "m_iClip1", RoundFloat(EvasionMeter_Charge[weapon] * 100.0));
 }
 
 public OnEntityDestroyed(ent)
