@@ -49,6 +49,48 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-
+  SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+  SDKHook(Client, SDKHook_PostThinkPost, OnClientPostThinkPost);
 }
 
+new bool:BuildingUpgrade[2049];
+new Float:BuildingUpgrade_MaxCharge[2049];
+new Float:BuildingUpgrade_Charge[2049];
+
+//For keeping track of the owner of various buildings
+new SentryOwner[MAXPLAYERS + 1];
+new DispenserOwner[MAXPLAYERS + 1];
+new TeleporterOwner[MAXPLAYERS + 1][2];
+
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
+{
+  new Action:action;
+  if(!StrEqual(attrib, "tf_custom_building_upgrade"))
+    return;
+  
+  new weapon = GetPlayerWeaponSlot(client, slot);
+  if(weapon < 0 || weapon > 2048)
+    return;
+  
+  if(StrEqual(attrib, "building upgrade attrib"))
+  {
+    
+  }
+}
+
+public OnEntityCreated(ent, const String:classname[])
+{
+  if(ent < 0 || ent > 2048)
+    return;
+    
+  new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwnerEntity");
+  if(!IsValidClient(owner))
+    return;
+  
+  if(StrContains(classname, "obj_sentrygun"))
+    SentryOwner[owner] = ent;
+  if(StrContains(classname, "obj_dispenser))
+    DispenserOwner[owner] = ent;
+  if(StrContains(classname, "obj_teleporter"))
+    TeleporterOwner[owner] = ent;
+}
