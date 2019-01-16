@@ -55,6 +55,7 @@ public OnClientPutInServer(client)
 
 new bool:BuildingUpgrade[2049];
 new Float:BuildingUpgrade_MaxCharge[2049];
+new Float:BuildingUpgrade_SentryMult[2049];
 new Float:BuildingUpgrade_Charge[2049];
 
 //For keeping track of the owner of various buildings
@@ -74,8 +75,21 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
   
   if(StrEqual(attrib, "building upgrade attrib"))
   {
+    new String:values[2][10];
+    ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
     
+    BuildingUpgrade_MaxCharge[weapon] = StringToFloat(values[0]);
+    BuildingUpgrade_SentryMult[weapon] = StringToFloat(values[1]);
+    
+    BuildingUpgrade[weapon] = true;
+    action = Plugin_Handled;
   }
+  return action;
+}
+
+public Action:OnTakeDamageAlive()
+{
+  
 }
 
 public OnEntityCreated(ent, const String:classname[])
@@ -93,4 +107,15 @@ public OnEntityCreated(ent, const String:classname[])
     DispenserOwner[owner] = ent;
   if(StrContains(classname, "obj_teleporter"))
     TeleporterOwner[owner] = ent;
+}
+
+public OnEntityDestroyed(ent)
+{
+  if(ent < 0 || ent > 2048)
+    return;
+    
+  BuildingUpgrade[ent] = false;
+  BuildingUpgrade_Charge[ent] = 0.0;
+  BuildingUpgrade_MaxCharge[ent] = 0.0;
+  BuildingUpgrade_SentryMult[ent] = 0.0;
 }
