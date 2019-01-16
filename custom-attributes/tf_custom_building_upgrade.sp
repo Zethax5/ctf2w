@@ -61,7 +61,10 @@ new Float:BuildingUpgrade_Charge[2049];
 //For keeping track of the owner of various buildings
 new SentryOwner[MAXPLAYERS + 1];
 new DispenserOwner[MAXPLAYERS + 1];
-new TeleporterOwner[MAXPLAYERS + 1][2];
+new TeleporterOwner1[MAXPLAYERS + 1];
+new TeleporterOwner2[MAXPLAYERS + 1];
+
+new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -81,15 +84,62 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     BuildingUpgrade_MaxCharge[weapon] = StringToFloat(values[0]);
     BuildingUpgrade_SentryMult[weapon] = StringToFloat(values[1]);
     
+    //Initializes ammo counter
+    SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
+    SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+    
     BuildingUpgrade[weapon] = true;
     action = Plugin_Handled;
   }
   return action;
 }
 
-public Action:OnTakeDamageAlive()
+public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3])
 {
+  if(attacker && victim)
+  {
+    if(BuildingUpgrade[GetPlayerWeaponSlot(attacker, 2)])
+    {
+      new melee = GetPlayerWeaponSlot(attacker, 2);
+      
+      if(inflictor == SentryOwner[attacker])
+        BuildingUpgrade_Charge[melee] += damage * BuildingUpgrade_SentryMult[melee];
+      else
+        BuildingUpgrade_Charge[melee] += damage;
+      
+      if(BuildingUpgrade_Charge[melee] > BuildingUpgrade_MaxCharge[melee])
+        BuildingUpgrade_Charge[melee] = BuildingUpgrade_MaxCharge[melee];
+    }
+  }
+}
+
+public OnClientPostThinkPost(client)
+{
+  if(!IsValidClient(client))
+    return;
   
+  new weapon = GetActiveWeapon(client);
+  if(weapon < 0 || weapon > 2048)
+    return;
+  
+  if(!BuildingUpgrade[weapon])
+    return;
+  
+  if(GetEngineTime() > LastTick[client] + 0.1)
+    BuildingUpgrade_PostThink(client, weapon);
+}
+
+static void BuildingUpgrade_PostThink(client, weapon)
+{
+  if(BuildingUpgrade_Charge[weapon] = BuildingUpgrade_MaxCharge[weapon])
+  {
+    
+  }
+  
+  //Displays charge with ammo meter
+		SetEntProp(weapon, Prop_Send, "m_iClip1", RoundFloat(BuildingUpgrade_Charge[weapon] / BuildingUpgrade_MaxCharge[weapon]) * 100.0);
+  
+  LastTick[client] = GetEngineTime();
 }
 
 public OnEntityCreated(ent, const String:classname[])
@@ -106,10 +156,15 @@ public OnEntityCreated(ent, const String:classname[])
   if(StrContains(classname, "obj_dispenser))
     DispenserOwner[owner] = ent;
   if(StrContains(classname, "obj_teleporter"))
-    TeleporterOwner[owner] = ent;
+  {
+    if(TeleporterOwner1[owner] == 0)
+      TeleporterOwner1[owner] = ent;
+    else if(TeleporterOwner2[owner] == 0)
+      TeleporterOwner2[owner] = ent;
+  }
 }
 
-public OnEntityDestroyed(ent)
+public OnEntityDestroyed(ent, const String:classname[])
 {
   if(ent < 0 || ent > 2048)
     return;
@@ -118,4 +173,17 @@ public OnEntityDestroyed(ent)
   BuildingUpgrade_Charge[ent] = 0.0;
   BuildingUpgrade_MaxCharge[ent] = 0.0;
   BuildingUpgrade_SentryMult[ent] = 0.0;
+  
+  if(StrContains(classname, "obj_teleporter"))
+  {
+    new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwnerEntity");
+    if(!IsValidClient(owner))
+      return;
+    
+    if(TeleporterOwner1[owner] == ent)
+      TeleporterOwner1[owner] = 0;
+      
+    if(TeleporterOwner2[owner] == ent)
+      TeleporterOwner2[owner] = 0;
+  }
 }
