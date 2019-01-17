@@ -14,6 +14,8 @@ Attributes in this pack:
 #include <sourcemod>
 #include <tf2_stocks>
 #include <tf2>
+#include <sdkhooks>
+#include <sdktools>
 #include <cw3_attributes>
 #include <zethax>
 
@@ -45,4 +47,13 @@ public OnPluginStart() {
 public OnClientPutInServer(client)
 {
 
+}
+
+public Action:CW3_onAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
+{
+  new Action:action;
+  if(!StrEqual(plugin, PLUGIN_NAME))
+    return;
+  
+  return action;
 }
