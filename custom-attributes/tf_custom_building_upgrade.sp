@@ -5,11 +5,16 @@ So, I'm remaking it.
 
 Created by: Zethax
 Document created on: January 16th, 2019
-Last edit made on: January 16th, 2019
+Last edit made on: January 17th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+	- "building upgrade attrib"
+		1) Damage required to fully charge
+		2) Sentry damage multiplier
+		
+		Dealing damage builds up a charge. When charged, use Special-attack to activate.
+		Activating instantly heals and upgrades all your buildings. 
 
 */
 
@@ -26,6 +31,8 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds custom attributes associated with building upgrades"
 #define PLUGIN_VERS "v0.0"
+
+#define SOUND_UPGRADE "mvm/mvm_used_powerup.wav"
 
 public Plugin:my_info = {
 	
@@ -45,6 +52,11 @@ public OnPluginStart() {
 	
 	OnClientPutInServer(i);
  }
+}
+
+public OnMapStart()
+{
+	PrecacheSound(SOUND_UPGRADE, true);
 }
 
 public OnClientPutInServer(client)
@@ -196,7 +208,7 @@ static void BuildingUpgrade_PostThink(client, weapon)
 				SetEntProp(TeleporterOwner2[client], Prop_Send, "m_iHighestUpgradeLevel", 3);
 				SetEntityHealth(TeleporterOwner2[client], GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iMaxHealth"));
 			}
-			EmitSoundToClient(client, "mvm/mvm_used_powerup.wav");
+			EmitSoundToClient(client, SOUND_UPGRADE);
 		}
 	}
 	
