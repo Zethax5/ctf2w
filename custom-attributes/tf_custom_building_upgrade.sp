@@ -149,65 +149,12 @@ static void BuildingUpgrade_PostThink(client, weapon)
 		if((buttons & IN_ATTACK3) == IN_ATTACK3)
 		{
 			BuildingUpgrade_Charge[weapon] = 0.0;
-			new upgradelvl;
-			new health;
-			new maxhealth;
-			if(SentryOwner[client] > 0)
-			{
-				upgradelvl = GetEntProp(SentryOwner[client], Prop_Send, "m_iHighestUpgradeLevel")
-				maxhealth = GetEntProp(SentryOwner[client], Prop_Data, "m_iMaxHealth");
-				health = GetEntProp(SentryOwner[client], Prop_Data, "m_iHealth");
-				
-				if(upgradelvl < 3)
-					PrintToChat(client, "Your SENTRY was upgraded");
-				if(upgradelvl == 3 && health < maxhealth)
-					PrintToChat(client, "Your SENTRY was healed");
-				
-				SetEntProp(SentryOwner[client], Prop_Send, "m_iHighestUpgradeLevel", 3);
-				SetEntityHealth(SentryOwner[client], GetEntProp(SentryOwner[client], Prop_Data, "m_iMaxHealth"));
-			}
-			if(DispenserOwner[client] > 0)
-			{
-				upgradelvl = GetEntProp(DispenserOwner[client], Prop_Send, "m_iHighestUpgradeLevel")
-				maxhealth = GetEntProp(DispenserOwner[client], Prop_Data, "m_iMaxHealth");
-				health = GetEntProp(DispenserOwner[client], Prop_Data, "m_iHealth");
-				
-				if(upgradelvl < 3)
-					PrintToChat(client, "Your DISPENSER was upgraded");
-				if(upgradelvl == 3 && health < maxhealth)
-					PrintToChat(client, "Your DISPENSER was healed");
-				
-				SetEntProp(DispenserOwner[client], Prop_Send, "m_iHighestUpgradeLevel", 3);
-				SetEntityHealth(DispenserOwner[client], GetEntProp(DispenserOwner[client], Prop_Data, "m_iMaxHealth"));
-			}
-			if(TeleporterOwner1[client] > 0)
-			{
-				upgradelvl = GetEntProp(TeleporterOwner1[client], Prop_Send, "m_iHighestUpgradeLevel")
-				maxhealth = GetEntProp(TeleporterOwner1[client], Prop_Data, "m_iMaxHealth");
-				health = GetEntProp(TeleporterOwner1[client], Prop_Data, "m_iHealth");
-				
-				if(upgradelvl < 3)
-					PrintToChat(client, "Your TELEPORTER was upgraded");
-				if(upgradelvl == 3 && health < maxhealth)
-					PrintToChat(client, "Your TELEPORTER was healed");
-				
-				SetEntProp(TeleporterOwner1[client], Prop_Send, "m_iHighestUpgradeLevel", 3);
-				SetEntityHealth(TeleporterOwner1[client], GetEntProp(TeleporterOwner1[client], Prop_Data, "m_iMaxHealth"));
-			}
-			if(TeleporterOwner2[client] > 0)
-			{
-				upgradelvl = GetEntProp(TeleporterOwner2[client], Prop_Send, "m_iHighestUpgradeLevel")
-				maxhealth = GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iMaxHealth");
-				health = GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iHealth");
-				
-				if(upgradelvl < 3)
-					PrintToChat(client, "Your TELEPORTER was upgraded");
-				if(upgradelvl == 3 && health < maxhealth)
-					PrintToChat(client, "Your TELEPORTER was healed");
-				
-				SetEntProp(TeleporterOwner2[client], Prop_Send, "m_iHighestUpgradeLevel", 3);
-				SetEntityHealth(TeleporterOwner2[client], GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iMaxHealth"));
-			}
+			
+			BuildingUpgrade_ApplyUpgrade(SentryOwner[client], client);
+			BuildingUpgrade_ApplyUpgrade(DispenserOwner[client], client);
+			BuildingUpgrade_ApplyUpgrade(TeleporterOwner1[client], client);
+			BuildingUpgrade_ApplyUpgrade(TeleporterOwner2[client], client);
+			
 			EmitSoundToClient(client, SOUND_UPGRADE);
 		}
 	}
@@ -216,6 +163,27 @@ static void BuildingUpgrade_PostThink(client, weapon)
 	SetEntProp(weapon, Prop_Send, "m_iClip1", RoundFloat(BuildingUpgrade_Charge[weapon] / BuildingUpgrade_MaxCharge[weapon]) * 100.0);
 	
 	LastTick[client] = GetEngineTime();
+}
+
+static void BuildingUpgrade_ApplyUpgrade(ent, client)
+{
+	new upgradelvl;
+	new health;
+	new maxhealth;
+	if(ent > 0)
+	{
+		upgradelvl = GetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel")
+		maxhealth = GetEntProp(ent, Prop_Data, "m_iMaxHealth");
+		health = GetEntProp(ent, Prop_Data, "m_iHealth");
+		
+		if(upgradelvl < 3)
+			PrintToChat(client, "Your TELEPORTER was upgraded");
+		if(upgradelvl == 3 && health < maxhealth)
+			PrintToChat(client, "Your TELEPORTER was healed");
+				
+		SetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel", 3);
+		SetEntityHealth(ent, GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iMaxHealth"));
+	}
 }
 
 public OnEntityCreated(ent, const String:classname[])
