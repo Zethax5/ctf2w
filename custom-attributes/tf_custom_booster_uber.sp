@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: January 17th, 2019
-Last edit made on: January 17th, 2019
+Last edit made on: January 18th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -46,10 +46,19 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-
+  SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 }
 
-public Action:CW3_onAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
+new bool:BoosterUber[2049];
+new Float:BoosterUber_Drain[2049];
+new Float:BoosterUber_Overheal[2049];
+new Float:BoosterUber_ShieldDur[2049];
+new Float:BoosterUber_Dur[MAXPLAYERS + 1];
+new Float:BoosterUber_Protection[2049];
+
+new Float:LastTick[MAXPLAYERS + 1];
+
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
   new Action:action;
   if(!StrEqual(plugin, PLUGIN_NAME))
@@ -61,11 +70,57 @@ public Action:CW3_onAddAttribute(slot, client, const String:attrib[], const Stri
   
   if(StrEqual(attrib, "ubercharge is booster shot"))
   {
-    new String:values[2][10];
+    new String:values[4][10];
     ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
     
+    BoosterUber_Drain[weapon] = StringToFloat(values[0]);
+    BoosterUber_Overheal[weapon] = StringToFloat(values[1]);
+    BoosterUber_ShieldDur[weapon] = StringToFloat(values[2]);
+    BoosterUber_Protection[weapon] = StringToFloat(values[3]);
+    
+    BoosterUber[weapon] = true;
     action = Plugin_Handled;
   }
   
   return action;
+}
+
+public OnClientPreThink(client)
+{
+  if(!IsValidClient(client))
+    return;
+    
+  new weapon = GetActiveWeapon(client);
+  if(weapon < 0 || weapon > 2048)
+    return;
+  
+  if(!BoosterUber[weapon])
+    return;
+  
+  if(GetEngineTime() > LastTick[client] + 0.1)
+    BoosterUber_PreThink(client, weapon);
+}
+
+static void BoosterUber_PreThink(client, weapon);
+{
+  new buttons = GetClientButtons(client);
+  
+  if((buttons & IN_ATTACK2) == IN_ATTACK2)
+  {
+    
+  }
+  
+  LastTick[client] = GetEngineTime();
+}
+
+public OnEntityDestroyed(ent)
+{
+  if(ent < 0 || ent > 2048)
+    return;
+  
+  BoosterUber[ent] = false;
+  BoosterUber_Drain[ent] = 0.0;
+  BoosterUber_Overheal[ent] = 0.0;
+  BoosterUber_ShieldDur[ent] = 0.0;
+  BoosterUber_Protection[ent] = 0.0;
 }
