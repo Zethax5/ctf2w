@@ -2,11 +2,18 @@
 
 Created by: Zethax
 Document created on: January 17th, 2019
-Last edit made on: January 18th, 2019
-Current version: v0.0
+Last edit made on: January 22nd, 2019
+Current version: v0.9
 
 Attributes in this pack:
- None so far
+  - "ubercharge is booster shot"
+      1) How much uber to drain per usage
+      2) The amount of overheal the patient gains on uber
+      3) How long the shield granted by ubercharge lasts in seconds
+      4) The protection granted by the shield from ubercharge, from 0.0 to 1.0
+      
+      Ubercharge consumes X amount to grant the patient an instant overheal + a shield that lasts for
+      Y seconds and grants them Z amount of protection. 
 
 */
 
