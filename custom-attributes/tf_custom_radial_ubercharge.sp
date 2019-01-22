@@ -1,1 +1,152 @@
+/*
+
+Previously when I made this the attribute was poorly made and caused lots of crashes, fun!
+So I'm remaking it for the sake of not having to scroll through what feels like billions of lines of code
+just to find the code associated with this attribute in there. 
+
+Created by: Zethax
+Document created on: January 22nd, 2019
+Last edit made on: January 22nd, 2019
+Current version: v0.0
+
+Attributes in this pack:
+ None so far
+
+*/
+	
+#pragma semicolon 1
+#include <sourcemod>
+#include <tf2_stocks>
+#include <tf2>
+#include <sdkhooks>
+#include <sdktools>
+#include <cw3_attributes>
+#include <zethax>
+
+#define PLUGIN_NAME "tf_custom_radial_ubercharge"
+#define PLUGIN_AUTH "Zethax"
+#define PLUGIN_DESC "Adds in a custom attribute associated with the radial ubercharge"
+#define PLUGIN_VERS "v0.0"
+
+public Plugin:my_info = {
+	
+	name				= PLUGIN_NAME,
+	author			= PLUGIN_AUTH,
+	description = PLUGIN_DESC,
+	version		 = PLUGIN_VERS,
+	url				 = ""
+};
+
+public OnPluginStart() {
+ 
+ for(new i = 1 ; i < MaxClients ; i++)
+ {
+	if(!IsValidClient(i))
+	 continue;
+	
+	OnClientPutInServer(i);
+ }
+}
+
+public OnClientPutInServer(client)
+{
+	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
+}
+
+new bool:RadialUbercharge[2049];
+new Float:RadialUbercharge_Radius[2049];
+new RadialUbercharge_Effect1[2049];
+new RadialUbercharge_Effect2[2049];
+new RadialUbercharge_Effect3[2049];
+
+//Used to keep track of when the ubercharge prethink ticked
+//So we're not overloading the server every tick
+new Float:LastTick[MAXPLAYERS + 1];
+
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
+{
+	new Action:action;
+	if(!StrEqual(plugin, PLUGIN_NAME))
+		return;
+	
+	if(StrEqual(attrib, "ubercharge is radial"))
+	{
+		new String:values[4][10];
+		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
+		
+		RadialUbercharge_Radius[weapon] = StringToFloat(values[0]);
+		RadialUbercharge_Effect1[weapon] = StringToInt(values[1]);
+		RadialUbercharge_Effect2[weapon] = StringToInt(values[2]);
+		RadialUbercharge_Effect3[weapon] = StringToInt(values[3]);
+		
+		RadialUbercharge[weapon] = true;
+		action = Plugin_Handled;
+	}
+	
+	return action;
+}
+
+public void OnClientPreThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(!RadialUbercharge[weapon])
+		return;
+	
+	if(GetEngineTime() > LastTick[client] + 0.25)
+		RadialUbercharge_PreThink(client, weapon);
+}
+
+static void RadialUbercharge_PreThink(client, weapon)
+{
+	new bool:ubercharged = GetEntProp(weapon, Prop_Send, "m_bChargeRelease");
+	if(ubercharged)
+	{
+		new patient = GetMediGunPatient(client);
+		if(IsValidClient(patient))
+		{
+			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
+			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
+			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
+		}
+		
+		new Float:Pos1[3];
+		GetClientAbsOrigin(client, Pos1);
+		new Float:Pos2[3];
+		new Float:distance;
+		for(new i = 1; i < MaxClients; i++)
+		{
+			if(IsValidClient(i) && GetClientTeam(i) == GetClientTeam(client))
+			{
+				GetClientAbsOrigin(i, Pos2);
+				distance = GetVectorDistance(Pos1, Pos2);
+				if(distance <= RadialUbercharge_Radius[weapon])
+				{
+					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
+					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
+					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
+				}
+			}
+		}
+	}
+	
+	LastTick[client] = GetEngineTime();
+}
+
+public OnEntityDestroyed(ent)
+{
+	if(ent < 0 || ent > 2048)
+		return;
+	
+	RadialUbercharge[ent] = false;
+	RadialUbercharge_Radius[ent] = 0.0;
+	RadialUbercharge_Effect1[ent] = 0;
+	RadialUbercharge_Effect2[ent] = 0;
+	RadialUbercharge_Effect3[ent] = 0;
+}
 
