@@ -26,22 +26,22 @@ Attributes in this pack:
 
 public Plugin:my_info = {
   
-  name        = PLUGIN_NAME,
-  author      = PLUGIN_AUTH,
-  description = PLUGIN_DESC,
-  version     = PLUGIN_VERS,
-  url         = ""
+	name        = PLUGIN_NAME,
+	author      = PLUGIN_AUTH,
+	description = PLUGIN_DESC,
+	version     = PLUGIN_VERS,
+	url         = ""
 };
 
 public OnPluginStart() {
  
- for(new i = 1 ; i < MaxClients ; i++)
- {
-  if(!IsValidClient(i))
-   continue;
+	for(new i = 1 ; i < MaxClients ; i++)
+	{
+		if(!IsValidClient(i))
+			continue;
   
-  OnClientPutInServer(i);
- }
+		OnClientPutInServer(i);
+	}
 }
 
 public OnClientPutInServer(client)
@@ -49,11 +49,19 @@ public OnClientPutInServer(client)
 
 }
 
-public Action:CW3_onAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
+public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-  new Action:action;
-  if(!StrEqual(plugin, PLUGIN_NAME))
-    return;
-  
-  return action;
+	new Action:action;
+	if(!StrEqual(plugin, PLUGIN_NAME))
+  		return;
+	
+	return action;
+}
+
+public OnEntityDestroyed(ent)
+{
+    if(ent < 0 || ent > 2048)
+        return;
+	
+	
 }
