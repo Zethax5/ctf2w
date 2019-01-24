@@ -78,6 +78,22 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return Plugin_Continue;
 }
 
+public Action:OnTakeDamageAlive()
+{
+	if(attacker && victim)
+	{
+		new secondary = GetPlayerWeaponSlot(victim, 1);
+		if(secondary < 0 || secondary > 2048)
+			return Plugin_Continue;
+		
+		if(JarateExplosion[secondary] && damage > 30.0)
+		{
+			ApplyRadiusEffects(attacker, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
+		}
+	}
+	return Plugin_Continue;
+}
+
 public OnEntityDestroyed(ent)
 {
     if(ent < 0 || ent > 2048)
