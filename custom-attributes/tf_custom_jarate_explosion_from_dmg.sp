@@ -24,6 +24,9 @@ Attributes in this pack:
 #define PLUGIN_DESC "Adds in an attribute associated with jarate explosions"
 #define PLUGIN_VERS "v0.0"
 
+#define PARTICLE_PISSBLAST "peejar_impact"
+#define SOUND_PISSBLAST ""
+
 public Plugin:my_info = {
   
 	name        = PLUGIN_NAME,
@@ -72,6 +75,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		JarateExplosion_DmgThreshold[weapon] = StringToFloat(values[2]);
 		
 		JarateExplosion[weapon] = true;
+		JarateExplosion_Primed[weapon] = true;
 		return Plugin_Handled;
 	}
 	
@@ -86,9 +90,11 @@ public Action:OnTakeDamageAlive()
 		if(secondary < 0 || secondary > 2048)
 			return Plugin_Continue;
 		
-		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary])
+		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary] && JarateExplosion_Primed[secondary])
 		{
-			ApplyRadiusEffects(attacker, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
+			ApplyRadiusEffects(victim, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
+			SpawnParticle(victim, _, PARTICLE_PISSBLAST);
+			EmitSoundToAll(SOUND_PISSBLAST, victim);
 		}
 	}
 	return Plugin_Continue;
