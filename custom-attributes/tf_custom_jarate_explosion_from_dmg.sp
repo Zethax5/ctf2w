@@ -6,7 +6,13 @@ Last edit made on: January 24th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+ - "jarate explosion on dmg"
+ 	1) Radius of the explosion
+	2) Duration of the applied jarate
+	3) Minimum damage required to be taken in 1 hit to apply.
+	
+	When X or more damage is taken, the user creates a jarate blast around him.
+	This effect can only trigger once.
 
 */
 
@@ -82,7 +88,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return Plugin_Continue;
 }
 
-public Action:OnTakeDamageAlive()
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
 {
 	if(attacker && victim)
 	{
