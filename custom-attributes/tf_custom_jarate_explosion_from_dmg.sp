@@ -52,7 +52,7 @@ public OnClientPutInServer(client)
 new bool:JarateExplosion[2049];
 new Float:JarateExplosion_Radius[2049];
 new Float:JarateExplosion_Duration[2049];
-new Float:JarateExplosion_MaxDmg[2049];
+new Float:JarateExplosion_DmgThreshold[2049];
 new bool:JarateExplosion_Primed[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
@@ -69,7 +69,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 		JarateExplosion_Radius[weapon] = StringToFloat(values[0]);
 		JarateExplosion_Duration[weapon] = StringToFloat(values[1]);
-		JarateExplosion_MaxDmg[weapon] = StringToFloat(values[2]);
+		JarateExplosion_DmgThreshold[weapon] = StringToFloat(values[2]);
 		
 		JarateExplosion[weapon] = true;
 		return Plugin_Handled;
@@ -86,7 +86,7 @@ public Action:OnTakeDamageAlive()
 		if(secondary < 0 || secondary > 2048)
 			return Plugin_Continue;
 		
-		if(JarateExplosion[secondary] && damage > 30.0)
+		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary])
 		{
 			ApplyRadiusEffects(attacker, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
 		}
@@ -96,9 +96,13 @@ public Action:OnTakeDamageAlive()
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
-	
+	JarateExplosion[ent] = false;
+	JarateExplosion_Radius[ent] = 0.0;
+	JarateExplosion_Duration[ent] = 0.0;
+	JarateExplosion_DmgThreshold[ent] = 0.0;
+	JarateExplosion_Primed[ent] = false;
 }
 
