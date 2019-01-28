@@ -25,7 +25,10 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_jarate_killer"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "A custom attribute plugin containing an attribute associated with jarate"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v0.5"
+
+//all the voice lines are a go
+#include <voice_lines>
 
 public Plugin:my_info = {
   
