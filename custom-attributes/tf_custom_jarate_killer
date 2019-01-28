@@ -2,11 +2,14 @@
 
 Created by: Zethax
 Document created on: January 25th, 2019
-Last edit made on: January 25th, 2019
-Current version: v0.0
+Last edit made on: January 28th, 2019
+Current version: v0.5
 
 Attributes in this pack:
- None so far
+    - "jarate killer"
+    	1) How long jarate lasts on killer
+	
+	When killed, the attacker will be jarated for X seconds.
 
 */
 
@@ -21,7 +24,7 @@ Attributes in this pack:
 
 #define PLUGIN_NAME "tf_custom_jarate_killer"
 #define PLUGIN_AUTH "Zethax"
-#define PLUGIN_DESC "A custom "
+#define PLUGIN_DESC "A custom attribute plugin containing an attribute associated with jarate"
 #define PLUGIN_VERS "v0.0"
 
 public Plugin:my_info = {
@@ -35,33 +38,48 @@ public Plugin:my_info = {
 
 public OnPluginStart() {
  
-	for(new i = 1 ; i < MaxClients ; i++)
-	{
-		if(!IsValidClient(i))
-			continue;
-  
-		OnClientPutInServer(i);
-	}
+	HookEvent("player_death", OnPlayerDeath);
 }
 
-public OnClientPutInServer(client)
-{
-
-}
+new bool:JarateKiller[2049];
+new Float:JarateKiller_Duration[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-  		return;
+  		return Plugin_Continue;
 	
-	return action;
+	if(StrEqual(attrib, "jarate killer"))
+	{
+		JarateKiller_Duration[weapon] = StringToFloat(values);
+		
+		JarateKiller[weapon] = true;
+		return Plugin_Handled;
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action:OnPlayerDeath(Handle:event, const String:name, bool:dontBroadcast)
+{
+	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	
+	if(attacker && victim)
+	{
+		new secondary = GetPlayerWeaponSlot(victim, 1);
+		if(JarateKiller[secondary])
+		{
+			TF2_AddCondition(attacker, TFCond_Jarate, JarateKiller_Duration[secondary], victim);
+		}
+	}
 }
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
-	
+	JarateKiller[ent] = false;
+	JarateKiller_Duration[ent] = 0.0;
 }
