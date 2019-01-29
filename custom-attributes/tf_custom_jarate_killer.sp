@@ -91,25 +91,52 @@ public Action:OnPlayerDeath(Handle:event, const String:name, bool:dontBroadcast)
 		{
 			TF2_AddCondition(attacker, TFCond_Jarate, JarateKiller_Duration[secondary], victim);
 			new class = TF2_GetPlayerClass(attacker);
-			new voiceline = GetRandomInt(0, 6);
+			new voiceline;
 			if(class == TFClass_Scout)
+			{
+				voiceline = GetRandomInt(0, 4);
 				EmitSoundToClient(attacker, ScoutDominations[voiceline]);
+			}
 			else if(class == TFClass_Soldier)
+			{
+				voiceline = GetRandomInt(0, 5);
 				EmitSoundToClient(attacker, SoldierDominations[voiceline]);
+			}
 			else if(class == TFClass_Pyro)
+			{
+				voiceline = GetRandomInt(0, 4);
 				EmitSoundToClient(attacker, PyroDominations[voiceline]);
+			}
 			else if(class == TFClass_Demoman)
+			{
+				voiceline = GetRandomInt(0, 5);
 				EmitSoundToClient(attacker, DemoDominations[voiceline]);
+			}
 			else if(class == TFClass_Heavy)
+			{
+				voiceline = GetRandomInt(0, 6);
 				EmitSoundToClient(attacker, HeavyDominations[voiceline]);
+			}
 			else if(class == TFClass_Engineer)
+			{
+				voiceline = GetRandomInt(0, 5);
 				EmitSoundToClient(attacker, EngineerDominations[voiceline]);
+			}
 			else if(class == TFClass_Medic)
+			{
+				voiceline = GetRandomInt(0, 4);
 				EmitSoundToClient(attacker, MedicDominations[voiceline]);
+			}
 			else if(class == TFClass_Sniper)
+			{
+				voiceline = GetRandomInt(0, 4);
 				EmitSoundToClient(attacker, SniperDominations[voiceline]);
+			}
 			else if(class == TFClass_Spy)
+			{
+				voiceline = GetRandomInt(0, 6);
 				EmitSoundToClient(attacker, SpyDominations[voiceline]);
+			}
 		}
 	}
 }
