@@ -250,7 +250,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 					{
 						if(TF2_GetPlayerClass(i) != TFClass_Heavy)
 							HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
-						else if(TF2_GetPlayerClass(i) == TFClass_Heavy && i != client && ReduceHealingSpinning[GetActiveWeapon(i)])
+						else if(TF2_GetPlayerClass(i) == TFClass_Heavy && i != client && ReduceHealingSpinning[GetActiveWeapon(i)] && TF2_IsPlayerInCondition(i, TFCond:0))
 							HealPlayer(client, i, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[GetActiveWeapon(i)])), _);
 					}
 					//Emits healing sound to players that step into the radius
