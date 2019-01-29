@@ -2,8 +2,8 @@
 
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
-Last edit made on: Sunday, January 13th, 2019
-Current version: v0.0
+Last edit made on: Tuesday, January 29th, 2019
+Current version: v1.1
 
 Attributes in this pack:
 	- "dispenser minigun main"
@@ -28,6 +28,12 @@ Attributes in this pack:
 		Requires "dispenser minigun main" to work.
 	
 	I might remake that attribute that reduces healing from all sources, to make it compatible with this
+	Future note: I did
+	
+	- "reduced healing while spun up"
+		1) Amount to reduce healing by while spun up
+		
+		Reduces healing while spun up. Only including this here so it affects other Provisioners as well.
 */
 
 #pragma semicolon 1
@@ -43,7 +49,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "Dispenser Minigun"
 #define PLUGIN_DESC "Creates the attributes associated with the dispenser minigun"
 #define PLUGIN_AUTH "Zethax"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.1"
 
 #define SOUND_DISPENSE "weapons/dispenser_heal.wav"
 
@@ -91,6 +97,9 @@ new Float:DispenserMinigun_HealRate[2049];
 
 new bool:DispenserMinigun_Ammo[2049];
 new Float:DispenserMinigun_DispenseRate[2049];
+
+new bool:ReduceHealingSpinning[2049];
+new Float:ReduceHealingSpinning_Amount[2049];
 
 //Tracks last time a player performed a healing tick
 //Used to reduce the load on the server heavily
@@ -149,6 +158,15 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		action = Plugin_Handled;
 	}
 	
+	//this one is just to reduce healing while spun up
+	//it's only in here so other Provisioners are affected
+	else if(StrEqual(attrib, "reduced healing while spun up"))
+	{
+		ReduceHealingSpinning_Amount[weapon] = StringToFloat(value);
+		
+		ReduceHealingSpinning[weapon] = true;
+		action = Plugin_Handled;
+	}
 	return action;
 }
 
@@ -183,6 +201,12 @@ static void DispenserMinigun_PostThink(client, weapon)
 	new buttons = GetClientButtons(client);
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
+		if(ReduceHealingSpinning[weapon])
+		{
+			TF2Attrib_SetByName(weapon, "", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
+			TF2Attrib_SetByName(weapon, "", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medkits
+		}
+		
 		TF2_AddCondition(client, TFCond:20, 1.0);
 		new Float:Pos1[3];
 		GetClientAbsOrigin(client, Pos1);
@@ -223,8 +247,12 @@ static void DispenserMinigun_PostThink(client, weapon)
 					//Function that actually heals the player, because Sourcemod and TF2
 					//don't provide such a library on their own
 					if(DispenserMinigun_Heal[weapon])
-						HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
-					
+					{
+						if(TF2_GetPlayerClass(i) != TFClass_Heavy)
+							HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
+						else if(TF2_GetPlayerClass(i) == TFClass_Heavy && i != client && ReduceHealingSpinning[GetActiveWeapon(i)])
+							HealPlayer(client, i, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[GetActiveWeapon(i)])), _);
+					}
 					//Emits healing sound to players that step into the radius
 					if(!DispenserMinigun_InRadius[i])
 					{
@@ -262,21 +290,30 @@ static void DispenserMinigun_PostThink(client, weapon)
 			}
 		}
 	}
-	else if((buttons & IN_ATTACK2) != IN_ATTACK2 && DispenserMinigun_InRadius[client])
+	else if(!TF2_IsPlayerInCondition(client, TFCond:0))
 	{
-		DispenserMinigun_InRadius[client] = false;
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		if(DispenserMinigun_InRadius[client])
+		{
+			DispenserMinigun_InRadius[client] = false;
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		}
+		
+		if(ReduceHealingSpinning[weapon])
+		{
+			TF2Attrib_RemoveByName(weapon, ""); //reduce healing from medics
+			TF2Attrib_RemoveByName(weapon, ""); //reduce healing from medics
+		}
 	}
 	
 	//Adds the amount the Heavy healed to the rage meter
@@ -376,6 +413,9 @@ public OnEntityDestroyed(ent)
 	
 	DispenserMinigun_Ammo[ent] = false;
 	DispenserMinigun_DispenseRate[ent] = 0.0;
+	
+	ReduceHealingSpinning[ent] = false;
+	ReduceHealingSpinning_Amount[ent] = 0.0;
 	
 	MaxAmmo[ent] = 0;
 }
