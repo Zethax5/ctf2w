@@ -4,10 +4,18 @@ Plugin description specificity: 100
 Created by: Zethax
 Document created on: January 31st, 2019
 Last edit made on: January 31st, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	- "backstab service"
+		1) Max stacks Spy can accumulate
+		2) Move speed bonus per stack
+		3) Cloak speed bonus per stack
+		4) Decloak speed bonus per stack
+		5) Blink time penalty per stack
+		
+		On backstab, Spy gains 1 stack. Per stack, he gains +X movement speed, +X cloak speed, +X decloak speed,
+		and +X cloak blink time. This can stack up to X times. 
 
 */
 
@@ -23,7 +31,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_backstab_service"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds attributes that buff the Spy based on backstabs."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
@@ -35,9 +43,7 @@ public Plugin:my_info = {
 };
 
 public OnPluginStart() {
- 	
-	HookEvent("player_death", OnPlayerDeath);
- 	
+ 	 	
 	for(new i = 1 ; i < MaxClients ; i++)
 	{
 		if(!IsValidClient(i))
@@ -49,7 +55,7 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_Think, OnClientThink);
+	SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
 }
 
 new bool:BackstabService[2049];
@@ -81,6 +87,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		BackstabService_DecloakSpd[weapon] = StringToFloat(values[3]);
 		BackstabService_Debuff[weapon] = StringToFloat(values[4]);
 		
+		//Initializes ammo counter
+		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
+		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+		
 		BackstabService[weapon] = true;
 		action = Plugin_Handled;
 	}
@@ -88,25 +98,27 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnTakeDamagePost(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	
 	if(attacker && victim)
 	{
-		new weapon = GetActiveWeapon(attacker);
-		if(BackstabService[weapon])
+		if(BackstabService[weapon] && damageCustom == TF_CUSTOM_BACKSTAB)
 		{
 			BackstabService_Stacks[weapon]++;
 			if(BackstabService_Stacks[weapon] > BackstabService_MaxStacks[weapon])
 				BackstabService_Stacks[weapon] = BackstabService_MaxStacks[weapon];
 			
+			//Sets ammo display to show stacks
+			SetEntProp(weapon, Prop_Send, "m_iClip1", BackstabService_Stacks[weapon]);
+			
 			TF2Attrib_SetByName(weapon, "move speed bonus", 1.0 + (BackstabService_MoveSpd[weapon] * BackstabService_Stacks[weapon]));
-			TF2Attrib_SetByName(weapon, "mult cloak rate", 0.0 - (BackstabService_MoveSpd[weapon] * BackstabService_Stacks[weapon]));
-			TF2Attrib_SetByName(weapon, "move speed bonus", 1.0 + (BackstabService_MoveSpd[weapon] * BackstabService_Stacks[weapon]));
+			TF2Attrib_SetByName(weapon, "mult cloak rate", 0.0 - (BackstabService_CloakSpd[weapon] * BackstabService_Stacks[weapon]));
+			TF2Attrib_SetByName(weapon, "mult decloak rate", 1.0 - (BackstabService_DecloakSpd[weapon] * BackstabService_Stacks[weapon]));
+			TF2Attrib_SetByName(weapon, "SET BONUS: cloak blink time penalty", 1.0 + (BackstabService_Debuff[weapon] * BackstabService_Stacks[weapon])
+			TF2_AddCondition(attacker, TFCond_SpeedBuffAlly, 0.001); //Updates player's movement speed
 		}
 	}
+	return Plugin_Continue;
 }
 
 public OnEntityDestroyed(ent)
