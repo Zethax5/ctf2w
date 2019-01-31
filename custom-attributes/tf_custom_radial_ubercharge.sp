@@ -69,6 +69,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	if(!StrEqual(plugin, PLUGIN_NAME))
 		return;
 	
+	new weapon = GetPlayerWeaponSlot(client, slot);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
 	if(StrEqual(attrib, "ubercharge is radial"))
 	{
 		new String:values[4][10];
