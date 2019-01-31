@@ -6,7 +6,16 @@ Last edit made on: January 30th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+    - "cloak is leap"
+	1) How much cloak to drain on use
+	2) Vertical velocity to add
+	3) Horizontal velocity multiplier
+	4) Air control multiplier
+	
+	Cloak is replaced with a leap, which drains X amount of cloak.
+	When cloak is used, the Spy will leap instead of go invisible, throwing him
+	in the direction he's moving and causing him to jump upward.
+	When leap is used, no fall damage is taken and air control is multiplied by Y.
 
 */
 
@@ -46,12 +55,14 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-
+	SDKHook(client, SDKHook_PostThink, OnClientPostThink);
 }
 
 new bool:LeapCloak[2049];
 new Float:LeapCloak_Drain[2049];
 new Float:LeapCloak_Mult[2049];
+new Float:LeapCloak_AirControl[2049];
+new Float:LeapCloak_JumpVel[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -61,11 +72,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	
 	if(StrEqual(attrib, "cloak is leap"))
 	{
-		new String:values[2][10];
+		new String:values[4][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		LeapCloak_Drain[weapon] = StringToFloat(values[0]);
-		LeapCloak_Mult[weapon] = StringToFloat(values[1]);
+		LeapCloak_JumpVel[weapon] = StringToFloat(values[1]);
+		LeapCloak_Mult[weapon] = StringToFloat(values[2]);
+		LeapCloak_AirControl[weapon] = StringToFloat(values[3]);
 		
 		LeapCloak[weapon] = true;
 		action = Plugin_Handled;
@@ -74,10 +87,60 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+public OnClientPostThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	if(TF2_GetPlayerClass(client) != TFClass_Spy)
+		return;
+	
+	new cloak = GetPlayerWeaponSlot(client, 3);
+	if(cloak < 0 || cloak > 2048)
+		return;
+	
+	if(!LeapCloak[cloak])
+		return;
+	
+	if(GetEngineTime() > LastTick[client] + 0.1)
+		LeapCloak_PostThink(client, cloak);
+}
+
+public void LeapCloak_PostThink(client, cloak)
+{
+	if(TF2_IsPlayerInCondition(client, TFCond_Cloaked))
+	{
+		new Float:m_flCloakMeter = GetEntPropFloat(client, Prop_Send, "m_flCloakMeter");
+		if(m_flCloakMeter >= LeapCloak_Drain[cloak])
+		{
+			new Float:vel[3];
+			GetEntPropVector(client, Prop_Data, "m_vecVelocity", vel);
+			vel[0] *= LeapCloak_Mult[cloak];
+			vel[2] += LeapCloak_JumpVel[cloak];
+			vel[1] *= LeapCloak_Mult[cloak];
+			TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, vel);
+			TF2Attrib_SetByName(cloak, "cancel falling damage", 1.0);
+			TF2Attrib_SetByName(cloak, "increased air control", LeapCloak_AirControl[cloak]);
+			SetEntPropFloat(client, Prop_Send, "m_flCloakMeter", m_flCloakMeter - LeapCloak_Drain[cloak]);
+		}
+		TF2_RemoveCondition(client, TFCond_Cloaked);
+	}
+	if((GetClientFlags(client) & FL_ONGROUND) == FL_ONGROUND)
+	{
+		TF2Attrib_RemoveByName(cloak, "cancel falling damage");
+		TF2Attrib_RemoveByName(cloak, "increased air control");
+	}
+}
+
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
+	LeapCloak[ent] = false;
+	LeapCloak_Drain[ent] = 0.0;
+	LeapCloak_Mult[ent] = 0.0;
+	LeapCloak_JumpVel[ent] = 0.0;
+	LeapCloak_AirControl[ent] = 0.0;
 	
 }
