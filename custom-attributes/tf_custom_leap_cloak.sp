@@ -64,11 +64,17 @@ new Float:LeapCloak_Mult[2049];
 new Float:LeapCloak_AirControl[2049];
 new Float:LeapCloak_JumpVel[2049];
 
+new bool:CloakRemovesStatus[2049];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
   		return;
+	
+	new weapon = GetPlayerWeaponSlot(client, slot);
+	if(weapon < 0 || weapon > 2048)
+		return;
 	
 	if(StrEqual(attrib, "cloak is leap"))
 	{
@@ -81,6 +87,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		LeapCloak_AirControl[weapon] = StringToFloat(values[3]);
 		
 		LeapCloak[weapon] = true;
+		action = Plugin_Handled;
+	}
+	else if(StrEqual(attrib, "cloak removes negative status"))
+	{
+		CloakRemovesStatus[weapon] = true;
 		action = Plugin_Handled;
 	}
   
@@ -98,20 +109,34 @@ public OnClientPostThink(client)
 	new cloak = GetPlayerWeaponSlot(client, 3);
 	if(cloak < 0 || cloak > 2048)
 		return;
-	
-	if(!LeapCloak[cloak])
+		
+	if(!LeapCloak[cloak] || !CloakRemovesStatus[cloak])
 		return;
 	
 	if(GetEngineTime() > LastTick[client] + 0.1)
-		LeapCloak_PostThink(client, cloak);
+		CustomCloak_PostThink(client, cloak);
 }
 
-public void LeapCloak_PostThink(client, cloak)
+public void CustomCloak_PostThink(client, cloak)
 {
 	if(TF2_IsPlayerInCondition(client, TFCond_Cloaked))
 	{
+		//removes negative status effects while cloaked, if the player doesn't have leap cloak
+		//prevents the player from spamming the cloak to remove status effects for free
+		if(CloakRemovesStatus[cloak] && !LeapCloak[cloak])
+		{
+			TF2_RemoveCondition(client, TFCond_OnFire);
+			TF2_RemoveCondition(client, TFCond_MarkedForDeath);
+			TF2_RemoveCondition(client, TFCond_Bleeding);
+			TF2_RemoveCondition(client, TFCond_Slowed);
+			TF2_RemoveCondition(client, TFCond_Dazed);
+			TF2_RemoveCondition(client, TFCond_Jarated);
+			TF2_RemoveCondition(client, TFCond_Milked);
+
+		}
+		
 		new Float:m_flCloakMeter = GetEntPropFloat(client, Prop_Send, "m_flCloakMeter");
-		if(m_flCloakMeter >= LeapCloak_Drain[cloak])
+		if(LeapCloak[cloak] && m_flCloakMeter >= LeapCloak_Drain[cloak])
 		{
 			new Float:vel[3];
 			GetEntPropVector(client, Prop_Data, "m_vecVelocity", vel);
@@ -122,8 +147,20 @@ public void LeapCloak_PostThink(client, cloak)
 			TF2Attrib_SetByName(cloak, "cancel falling damage", 1.0);
 			TF2Attrib_SetByName(cloak, "increased air control", LeapCloak_AirControl[cloak]);
 			SetEntPropFloat(client, Prop_Send, "m_flCloakMeter", m_flCloakMeter - LeapCloak_Drain[cloak]);
+			
+			if(CloakRemovesStatus[cloak])
+			{
+				TF2_RemoveCondition(client, TFCond_OnFire);
+				TF2_RemoveCondition(client, TFCond_MarkedForDeath);
+				TF2_RemoveCondition(client, TFCond_Bleeding);
+				TF2_RemoveCondition(client, TFCond_Slowed);
+				TF2_RemoveCondition(client, TFCond_Dazed);
+				TF2_RemoveCondition(client, TFCond_Jarated);
+				TF2_RemoveCondition(client, TFCond_Milked);
+			}
 		}
-		TF2_RemoveCondition(client, TFCond_Cloaked);
+		if(LeapCloak[cloak])
+			TF2_RemoveCondition(client, TFCond_Cloaked);
 	}
 	if((GetClientFlags(client) & FL_ONGROUND) == FL_ONGROUND)
 	{
@@ -143,4 +180,5 @@ public OnEntityDestroyed(ent)
 	LeapCloak_JumpVel[ent] = 0.0;
 	LeapCloak_AirControl[ent] = 0.0;
 	
+	CloakRemovesStatus[ent] = false;
 }
