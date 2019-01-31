@@ -128,8 +128,8 @@ public void CustomCloak_PostThink(client, cloak)
 			TF2_RemoveCondition(client, TFCond_OnFire);
 			TF2_RemoveCondition(client, TFCond_MarkedForDeath);
 			TF2_RemoveCondition(client, TFCond_Bleeding);
-			TF2_RemoveCondition(client, TFCond_Slowed);
-			TF2_RemoveCondition(client, TFCond_Dazed);
+			TF2_RemoveCondition(client, TFCond_MarkedForDeathSilent);
+			TF2_RemoveCondition(client, TFCond_Gas);
 			TF2_RemoveCondition(client, TFCond_Jarated);
 			TF2_RemoveCondition(client, TFCond_Milked);
 
