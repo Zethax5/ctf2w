@@ -510,3 +510,19 @@ stock PrecacheParticle(String:strName[])
 		}
 	}
 }
+
+public Action:RemoveParticle(Handle:timer, any:particle) //Chawlz' code
+{
+	if(particle >= 0 && IsValidEntity(particle))
+	{
+		new String:classname[32];
+		GetEdictClassname(particle, classname, sizeof(classname));
+		if(StrEqual(classname, "info_particle_system", false))
+		{
+			AcceptEntityInput(particle, "Stop");
+			AcceptEntityInput(particle, "Kill");
+			AcceptEntityInput(particle, "Deactivate");
+			particle = -1;
+		}
+	}
+}
