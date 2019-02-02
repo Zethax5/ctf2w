@@ -24,7 +24,7 @@ Attributes in this pack:
 #include <tf2>
 #include <sdkhooks>
 #include <sdktools>
-#include <cw3_attributes>
+#include <cw3-attributes>
 #include <zethax>
 
 #define PLUGIN_NAME "tf_custom_building_ugrade"
