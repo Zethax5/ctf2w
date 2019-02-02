@@ -14,7 +14,7 @@ Attributes in this pack:
 #include <sourcemod>
 #include <tf2_stocks>
 #include <tf2>
-#include <cw3_attributes>
+#include <cw3-attributes>
 #include <zethax>
 
 #define PLUGIN_NAME "tf_custom_kills_boost_weapon"
