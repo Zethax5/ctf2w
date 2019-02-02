@@ -53,11 +53,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 {
 	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-  		return;
+  		return action;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return action;
 	
 	return action;
 }
