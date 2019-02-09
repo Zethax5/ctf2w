@@ -26,6 +26,7 @@ Attributes in this pack:
 #include <sdkhooks>
 #include <sdktools>
 #include <cw3-attributes>
+#include <tf2attributes>
 #include <zethax>
 
 #define PLUGIN_NAME "tf_custom_backstab_service"
@@ -55,12 +56,12 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 }
 
 new bool:BackstabService[2049];
 new Float:BackstabService_MoveSpd[2049];
-new Float:BackstabService_CloakSpd[2049];
+new Float:BackstabService_CloakSpd[2049]; 
 new Float:BackstabService_DecloakSpd[2049];
 new Float:BackstabService_Debuff[2049];
 new BackstabService_MaxStacks[2049];
@@ -68,20 +69,19 @@ new BackstabService_Stacks[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-  		return;
+  		return Plugin_Continue;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return Plugin_Continue;
 		
 	if(StrEqual(attrib, "backstab service"))
 	{
 		new String:values[5][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
-		BackstabService_MaxStacks[weapon] = StringToFloat(values[0]);
+		BackstabService_MaxStacks[weapon] = StringToInt(values[0]);
 		BackstabService_MoveSpd[weapon] = StringToFloat(values[1]);
 		BackstabService_CloakSpd[weapon] = StringToFloat(values[2]);
 		BackstabService_DecloakSpd[weapon] = StringToFloat(values[3]);
@@ -92,16 +92,18 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
 		
 		BackstabService[weapon] = true;
-		action = Plugin_Handled;
+		return Plugin_Handled;
 	}
 	
-	return action;
+	return Plugin_Continue;
 }
 
-public Action:OnTakeDamagePost(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	if(attacker && victim)
+	if(IsValidClient(attacker))
 	{
+		if(weapon < 0 || weapon > 2048)
+			return Plugin_Continue;
 		if(BackstabService[weapon] && damageCustom == TF_CUSTOM_BACKSTAB)
 		{
 			BackstabService_Stacks[weapon]++;
@@ -114,7 +116,7 @@ public Action:OnTakeDamagePost(victim, &attacker, &inflictor, &Float:damage, &da
 			TF2Attrib_SetByName(weapon, "move speed bonus", 1.0 + (BackstabService_MoveSpd[weapon] * BackstabService_Stacks[weapon]));
 			TF2Attrib_SetByName(weapon, "mult cloak rate", 0.0 - (BackstabService_CloakSpd[weapon] * BackstabService_Stacks[weapon]));
 			TF2Attrib_SetByName(weapon, "mult decloak rate", 1.0 - (BackstabService_DecloakSpd[weapon] * BackstabService_Stacks[weapon]));
-			TF2Attrib_SetByName(weapon, "SET BONUS: cloak blink time penalty", 1.0 + (BackstabService_Debuff[weapon] * BackstabService_Stacks[weapon])
+			TF2Attrib_SetByName(weapon, "SET BONUS: cloak blink time penalty", 1.0 + (BackstabService_Debuff[weapon] * BackstabService_Stacks[weapon]));
 			TF2_AddCondition(attacker, TFCond_SpeedBuffAlly, 0.001); //Updates player's movement speed
 		}
 	}
@@ -126,12 +128,12 @@ public OnEntityDestroyed(ent)
     if(ent < 0 || ent > 2048)
         return;
 	
-	BackstabService[weapon] = false;
-	BackstabService_MoveSpd[weapon] = 0.0;
-	BackstabService_CloakSpd[weapon] = 0.0;
-	BackstabService_DecloakSpd[weapon] = 0.0;
-	BackstabService_Debuff[weapon] = 0.0;
-	BackstabService_MaxStacks[weapon] = 0;
-	BackstabService_Stacks[weapon] = 0;
+	BackstabService[ent] = false;
+	BackstabService_MoveSpd[ent] = 0.0;
+	BackstabService_CloakSpd[ent] = 0.0;
+	BackstabService_DecloakSpd[ent] = 0.0;
+	BackstabService_Debuff[ent] = 0.0;
+	BackstabService_MaxStacks[ent] = 0;
+	BackstabService_Stacks[ent] = 0;
 }
 

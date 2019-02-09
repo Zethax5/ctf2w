@@ -20,7 +20,7 @@ Attributes in this pack:
 #include <tf2>
 #include <sdkhooks>
 #include <sdktools>
-#include <cw3_attributes>
+#include <cw3-attributes>
 #include <zethax>
 
 #define PLUGIN_NAME "tf_custom_radial_ubercharge"
@@ -67,11 +67,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 {
 	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-		return;
+		return action;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return action;
 	
 	if(StrEqual(attrib, "ubercharge is radial"))
 	{
@@ -108,7 +108,7 @@ public void OnClientPreThink(client)
 
 static void RadialUbercharge_PreThink(client, weapon)
 {
-	new bool:ubercharged = GetEntProp(weapon, Prop_Send, "m_bChargeRelease");
+	new ubercharged = GetEntProp(weapon, Prop_Send, "m_bChargeRelease");
 	if(ubercharged)
 	{
 		new patient = GetMediGunPatient(client);

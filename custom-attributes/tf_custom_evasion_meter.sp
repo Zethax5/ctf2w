@@ -108,38 +108,41 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
 	new Action:action;
-	if(attacker && victim)
+	if(IsValidClient(attacker) && IsValidClient(victim))
 	{
-	 	if(EvasionMeter[weapon])
+		if(weapon > 0 && weapon < 2049)
 		{
-			EvasionMeter_Charge[weapon] += EvasionMeter_Gain[weapon];
-			if(EvasionMeter_Charge[weapon] > 1.0)
-	       	EvasionMeter_Charge[weapon] = 1.0;
-		}
-		if(EvasionMeter[GetActiveWeapon(victim)])
-		{
-			new wep = GetActiveWeapon(victim);
-			if(EvasionMeter_Charge[wep] >= GetRandomFloat(0.0, 1.0))
+		 	if(EvasionMeter[weapon])
 			{
-				//Setup for drain
-				new Float:drain = EvasionMeter_Subtract[wep];
-				if(weapon == GetPlayerWeaponSlot(attacker, 2))
-					drain = EvasionMeter_SubtractMelee[wep];
-				
-				//Draining evasion when taking damage
-				EvasionMeter_Charge[wep] -= (damage * drain) / 100.0;
-				if(EvasionMeter_Charge[wep] < 0.0)
-					EvasionMeter_Charge[wep] = 0.0;
-				
-				//Visuals & sounds
-				new Float:Pos[3];
-				Pos[2] += 75;
-				SpawnParticle(victim, Pos, PARTICLE_DODGE);
-				EmitSoundToAll(SOUND_DODGE, victim);
-				  
-				//Setting damage to 0
-				damage = 0.0;
-				action = Plugin_Changed;
+				EvasionMeter_Charge[weapon] += EvasionMeter_Gain[weapon];
+				if(EvasionMeter_Charge[weapon] > 1.0)
+		       	EvasionMeter_Charge[weapon] = 1.0;
+			}
+			if(EvasionMeter[GetActiveWeapon(victim)])
+			{
+				new wep = GetActiveWeapon(victim);
+				if(EvasionMeter_Charge[wep] >= GetRandomFloat(0.0, 1.0))
+				{
+					//Setup for drain
+					new Float:drain = EvasionMeter_Subtract[wep];
+					if(weapon == GetPlayerWeaponSlot(attacker, 2))
+						drain = EvasionMeter_SubtractMelee[wep];
+					
+					//Draining evasion when taking damage
+					EvasionMeter_Charge[wep] -= (damage * drain) / 100.0;
+					if(EvasionMeter_Charge[wep] < 0.0)
+						EvasionMeter_Charge[wep] = 0.0;
+					
+					//Visuals & sounds
+					new Float:Pos[3];
+					Pos[2] += 75;
+					SpawnParticle(victim, Pos, PARTICLE_DODGE);
+					EmitSoundToAll(SOUND_DODGE, victim);
+					  
+					//Setting damage to 0
+					damage = 0.0;
+					action = Plugin_Changed;
+				}
 			}
 		}
 	}

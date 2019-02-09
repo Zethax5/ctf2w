@@ -25,13 +25,14 @@ Attributes in this pack:
 #include <sdktools>
 #include <cw3-attributes>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "tf_custom_booster_uber"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in a custom ubercharge"
 #define PLUGIN_VERS "v0.0"
 
-#define PARTICLE_SHIELD ""
+#define PARTICLE_SHIELD "powerup_icon_resist"
 #define SOUND_BOOSTERUBER "weapons/fx/rics/arrow_impact_crossbow_heal.wav"
 
 public Plugin:my_info = {
@@ -82,13 +83,12 @@ new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-		return;
+		return Plugin_Continue;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return Plugin_Continue;
 	
 	if(StrEqual(attrib, "ubercharge is booster shot"))
 	{
@@ -100,11 +100,15 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		BoosterUber_ShieldDur[weapon] = StringToFloat(values[2]);
 		BoosterUber_Protection[weapon] = StringToFloat(values[3]);
 		
+		//sets ubercharge to an invalid value
+		//making it so it doesn't do anything
+		TF2Attrib_SetByName(weapon, "medigun charge is crit boost", -1.0);
+		
 		BoosterUber[weapon] = true;
-		action = Plugin_Handled;
+		return Plugin_Handled;
 	}
 	
-	return action;
+	return Plugin_Continue;
 }
 
 public OnClientPreThink(client)
@@ -120,10 +124,9 @@ public OnClientPreThink(client)
 		BoosterUber_PreThink(client, weapon);
 }
 
-static void BoosterUber_PreThink(client, weapon);
+static void BoosterUber_PreThink(client, weapon)
 {
 	new buttons = GetClientButtons(client);
-	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	
 	if(GetEngineTime() > BoosterUber_Dur[client] + BoosterUber_ShieldDur[client] && Shielded[client])
 	{
@@ -137,22 +140,34 @@ static void BoosterUber_PreThink(client, weapon);
 	
 	if(!BoosterUber[weapon])
 		return;
+		
+	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	
 	if((buttons & IN_ATTACK2) == IN_ATTACK2)
 	{
-		if(ubercharge >= BoosterUber_Drain[weapon] && IsValidClient(GetMediGunPatient(client)))
+		if(ubercharge >= BoosterUber_Drain[weapon] && IsValidClient(GetMediGunPatient(client)) && !Shielded[GetMediGunPatient(client)])
 		{
 			new patient = GetMediGunPatient(client);
 			
-			SetEntityHealth(patient, GetClientMaxHealth(patient) * BoosterUber_Overheal[weapon]);
+			SetEntityHealth(patient, RoundFloat(GetClientMaxHealth(patient) * BoosterUber_Overheal[weapon]));
 			BoosterUber_Dur[patient] = GetEngineTime();
 			BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
 			BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];
-			BoosterUber_Particle[patient] = AttachParticle(patient, PARTICLE_SHIELD, BoosterUber_ShieldDur[weapon]);
+			Shielded[patient] = true;
+			
+			new Float:pos[3];
+			pos[2] += 100.0;
+			BoosterUber_Particle[patient] = AttachParticle(patient, PARTICLE_SHIELD, BoosterUber_ShieldDur[weapon], pos);
+			EmitSoundToAll(SOUND_BOOSTERUBER, patient);
 			
 			ubercharge -= BoosterUber_Drain[weapon];
 			SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
 		}
+	}
+	if(ubercharge > 0.99)
+	{
+		ubercharge = 0.99;
+		SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
 	}
 	
 	LastTick[client] = GetEngineTime();
@@ -171,23 +186,22 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	return Plugin_Continue;
 }
 
-public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+public void OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	new Victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	if(attacker && victim)
+	if(attacker && Victim)
 	{
-		if(Shielded[victim])
+		if(Shielded[Victim])
 		{
-			CreateTimer(0.0, RemoveParticle, BoosterUber_Particle[victim]);
-			BoosterUber_Dur[victim] = 0.0;
-			BoosterUber_ShieldDur[victim] = 0.0;
-			BoosterUber_Protection[victim] = 0.0;
-			BoosterUber_Particle[victim] = 0;
-			Shielded[victim] = false;
+			CreateTimer(0.0, RemoveParticle, BoosterUber_Particle[Victim]);
+			BoosterUber_Dur[Victim] = 0.0;
+			BoosterUber_ShieldDur[Victim] = 0.0;
+			BoosterUber_Protection[Victim] = 0.0;
+			BoosterUber_Particle[Victim] = 0;
+			Shielded[Victim] = false;
 		}
 	}
-	return Plugin_Continue;
 }
 
 public Action:OnTouchResupply(Handle:event, const String:name[], bool:dontBroadcast)

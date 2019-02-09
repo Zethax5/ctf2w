@@ -27,6 +27,7 @@ Attributes in this pack:
 #include <sdktools>
 #include <cw3-attributes>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "tf_custom_leap_cloak"
 #define PLUGIN_AUTH "Zethax"
@@ -66,15 +67,17 @@ new Float:LeapCloak_JumpVel[2049];
 
 new bool:CloakRemovesStatus[2049];
 
+new Float:LastTick[MAXPLAYERS + 1];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-  		return;
+  		return action;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return action;
 	
 	if(StrEqual(attrib, "cloak is leap"))
 	{
@@ -106,7 +109,7 @@ public OnClientPostThink(client)
 	if(TF2_GetPlayerClass(client) != TFClass_Spy)
 		return;
 	
-	new cloak = GetPlayerWeaponSlot(client, 3);
+	new cloak = GetPlayerWeaponSlot(client, 4);
 	if(cloak < 0 || cloak > 2048)
 		return;
 		
@@ -162,7 +165,7 @@ public void CustomCloak_PostThink(client, cloak)
 		if(LeapCloak[cloak])
 			TF2_RemoveCondition(client, TFCond_Cloaked);
 	}
-	if((GetClientFlags(client) & FL_ONGROUND) == FL_ONGROUND)
+	if((GetEntityFlags(client) & FL_ONGROUND) == FL_ONGROUND)
 	{
 		TF2Attrib_RemoveByName(cloak, "cancel falling damage");
 		TF2Attrib_RemoveByName(cloak, "increased air control");

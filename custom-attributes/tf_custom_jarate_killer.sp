@@ -42,6 +42,7 @@ public Plugin:my_info = {
 public OnPluginStart() {
  
 	HookEvent("player_death", OnPlayerDeath);
+	
 }
 
 public OnMapStart() {
@@ -53,7 +54,7 @@ public OnMapStart() {
 		PrecacheSound(PyroDominations[i], true);
 		PrecacheSound(DemoDominations[i], true);
 		PrecacheSound(HeavyDominations[i], true);
-		PrecacheSound(EngineerDominations[i], true);
+		PrecacheSound(EngiDominations[i], true);
 		PrecacheSound(MedicDominations[i], true);
 		PrecacheSound(SniperDominations[i], true);
 		PrecacheSound(SpyDominations[i], true);
@@ -70,11 +71,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return Plugin_Continue;
 	
 	if(StrEqual(attrib, "jarate killer"))
 	{
-		JarateKiller_Duration[weapon] = StringToFloat(values);
+		JarateKiller_Duration[weapon] = StringToFloat(value);
 		
 		JarateKiller[weapon] = true;
 		return Plugin_Handled;
@@ -83,18 +84,18 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return Plugin_Continue;
 }
 
-public Action:OnPlayerDeath(Handle:event, const String:name, bool:dontBroadcast)
+public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	new Victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
-	if(attacker && victim)
+	if(attacker && Victim)
 	{
-		new secondary = GetPlayerWeaponSlot(victim, 1);
+		new secondary = GetPlayerWeaponSlot(Victim, 1);
 		if(JarateKiller[secondary])
 		{
-			TF2_AddCondition(attacker, TFCond_Jarate, JarateKiller_Duration[secondary], victim);
-			new class = TF2_GetPlayerClass(attacker);
+			TF2_AddCondition(attacker, TFCond_Jarated, JarateKiller_Duration[secondary], Victim);
+			new TFClassType:class = TF2_GetPlayerClass(attacker);
 			new voiceline;
 			if(class == TFClass_Scout)
 			{
@@ -111,7 +112,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name, bool:dontBroadcast)
 				voiceline = GetRandomInt(0, 4);
 				EmitSoundToClient(attacker, PyroDominations[voiceline]);
 			}
-			else if(class == TFClass_Demoman)
+			else if(class == TFClass_DemoMan)
 			{
 				voiceline = GetRandomInt(0, 5);
 				EmitSoundToClient(attacker, DemoDominations[voiceline]);
@@ -124,7 +125,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name, bool:dontBroadcast)
 			else if(class == TFClass_Engineer)
 			{
 				voiceline = GetRandomInt(0, 5);
-				EmitSoundToClient(attacker, EngineerDominations[voiceline]);
+				EmitSoundToClient(attacker, EngiDominations[voiceline]);
 			}
 			else if(class == TFClass_Medic)
 			{

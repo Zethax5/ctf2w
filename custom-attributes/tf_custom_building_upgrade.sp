@@ -9,7 +9,7 @@ Last edit made on: January 17th, 2019
 Current version: v0.0
 
 Attributes in this pack:
-	- "building upgrade attrib"
+	- "building upgrade ability"
 		1) Damage required to fully charge
 		2) Sentry damage multiplier
 		
@@ -27,7 +27,7 @@ Attributes in this pack:
 #include <cw3-attributes>
 #include <zethax>
 
-#define PLUGIN_NAME "tf_custom_building_ugrade"
+#define PLUGIN_NAME "tf_custom_building_upgrade"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds custom attributes associated with building upgrades"
 #define PLUGIN_VERS "v0.0"
@@ -44,6 +44,8 @@ public Plugin:my_info = {
 };
 
 public OnPluginStart() {
+ 
+ HookEvent("player_builtobject", OnPlayerBuiltObject);
  
  for(new i = 1 ; i < MaxClients ; i++)
  {
@@ -62,7 +64,7 @@ public OnMapStart()
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
-	SDKHook(Client, SDKHook_PostThinkPost, OnClientPostThinkPost);
+	SDKHook(client, SDKHook_PostThinkPost, OnClientPostThinkPost);
 }
 
 new bool:BuildingUpgrade[2049];
@@ -80,15 +82,14 @@ new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
-	new Action:action;
-	if(!StrEqual(attrib, "tf_custom_building_upgrade"))
-		return;
+	if(!StrEqual(plugin, PLUGIN_NAME))
+		return Plugin_Continue;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return Plugin_Continue;
 	
-	if(StrEqual(attrib, "building upgrade attrib"))
+	if(StrEqual(attrib, "building upgrade ability"))
 	{
 		new String:values[2][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
@@ -101,19 +102,20 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
 		
 		BuildingUpgrade[weapon] = true;
-		action = Plugin_Handled;
+		return Plugin_Handled;
 	}
-	return action;
+	return Plugin_Continue;
 }
 
-public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3])
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	if(attacker && victim)
+	if(IsValidClient(attacker))
 	{
-		if(BuildingUpgrade[GetPlayerWeaponSlot(attacker, 2)])
-		{
-			new melee = GetPlayerWeaponSlot(attacker, 2);
-			
+		new melee = GetPlayerWeaponSlot(attacker, 2);
+		if(melee < 0 || melee > 2048)
+			return Plugin_Continue;
+		if(BuildingUpgrade[melee])
+		{	
 			if(inflictor == SentryOwner[attacker])
 				BuildingUpgrade_Charge[melee] += damage * BuildingUpgrade_SentryMult[melee];
 			else
@@ -123,6 +125,7 @@ public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, 
 				BuildingUpgrade_Charge[melee] = BuildingUpgrade_MaxCharge[melee];
 		}
 	}
+	return Plugin_Continue;
 }
 
 public OnClientPostThinkPost(client)
@@ -160,7 +163,7 @@ static void BuildingUpgrade_PostThink(client, weapon)
 	}
 	
 	//Displays charge with ammo meter
-	SetEntProp(weapon, Prop_Send, "m_iClip1", RoundFloat(BuildingUpgrade_Charge[weapon] / BuildingUpgrade_MaxCharge[weapon]) * 100.0);
+	SetEntProp(weapon, Prop_Send, "m_iClip1", RoundFloat((BuildingUpgrade_Charge[weapon] / BuildingUpgrade_MaxCharge[weapon]) * 100.0));
 	
 	LastTick[client] = GetEngineTime();
 }
@@ -172,34 +175,45 @@ static void BuildingUpgrade_ApplyUpgrade(ent, client)
 	new maxhealth;
 	if(ent > 0)
 	{
-		upgradelvl = GetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel")
+		upgradelvl = GetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel");
 		maxhealth = GetEntProp(ent, Prop_Data, "m_iMaxHealth");
 		health = GetEntProp(ent, Prop_Data, "m_iHealth");
 		
 		if(upgradelvl < 3)
-			PrintToChat(client, "Your TELEPORTER was upgraded");
+		{
+			if(IsClassname(ent, "obj_sentrygun"))
+				PrintToChat(client, "Your SENTRY was upgraded");
+			if(IsClassname(ent, "obj_dispenser"))
+				PrintToChat(client, "Your DISPENSER was upgraded");
+			if(IsClassname(ent, "obj_teleporter"))
+				PrintToChat(client, "Your TELEPORTER was upgraded");
+			
+		}
 		if(upgradelvl == 3 && health < maxhealth)
-			PrintToChat(client, "Your TELEPORTER was healed");
-				
+		{
+			if(IsClassname(ent, "obj_sentrygun"))
+				PrintToChat(client, "Your SENTRY was healed");
+			if(IsClassname(ent, "obj_dispenser"))
+				PrintToChat(client, "Your DISPENSER was healed");
+			if(IsClassname(ent, "obj_teleporter"))
+				PrintToChat(client, "Your TELEPORTER was healed");
+		}
+		
 		SetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel", 3);
-		SetEntityHealth(ent, GetEntProp(TeleporterOwner2[client], Prop_Data, "m_iMaxHealth"));
+		SetEntityHealth(ent, maxhealth);
 	}
 }
 
-public OnEntityCreated(ent, const String:classname[])
+public Action:OnPlayerBuiltObject(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(ent < 0 || ent > 2048)
-		return;
-		
-	new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwnerEntity");
-	if(!IsValidClient(owner))
-		return;
+	new owner = GetClientOfUserId(GetEventInt(event, "userid"));
+	new ent = GetEventInt(event, "index");
 	
-	if(StrContains(classname, "obj_sentrygun"))
+	if(IsClassname(ent, "obj_sentrygun"))
 		SentryOwner[owner] = ent;
-	if(StrContains(classname, "obj_dispenser))
+	if(IsClassname(ent, "obj_dispenser"))
 		DispenserOwner[owner] = ent;
-	if(StrContains(classname, "obj_teleporter"))
+	if(IsClassname(ent, "obj_teleporter"))
 	{
 		if(TeleporterOwner1[owner] == 0)
 			TeleporterOwner1[owner] = ent;
@@ -208,7 +222,7 @@ public OnEntityCreated(ent, const String:classname[])
 	}
 }
 
-public OnEntityDestroyed(ent, const String:classname[])
+public OnEntityDestroyed(ent)
 {
 	if(ent < 0 || ent > 2048)
 		return;
@@ -218,16 +232,29 @@ public OnEntityDestroyed(ent, const String:classname[])
 	BuildingUpgrade_MaxCharge[ent] = 0.0;
 	BuildingUpgrade_SentryMult[ent] = 0.0;
 	
-	if(StrContains(classname, "obj_teleporter"))
+	if(IsClassname(ent, "obj_sentrygun"))
 	{
-		new owner = GetEntPropEnt(ent, Prop_Send, "m_hOwnerEntity");
+		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
+		if(!IsValidClient(owner))
+			return;
+		SentryOwner[owner] = 0;
+	}
+	if(IsClassname(ent, "obj_dispenser"))
+	{
+		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
+		if(!IsValidClient(owner))
+			return;
+		DispenserOwner[owner] = 0;
+	}
+	if(IsClassname(ent, "obj_teleporter"))
+	{
+		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
 		if(!IsValidClient(owner))
 			return;
 		
 		if(TeleporterOwner1[owner] == ent)
 			TeleporterOwner1[owner] = 0;
-			
-		if(TeleporterOwner2[owner] == ent)
+		else if(TeleporterOwner2[owner] == ent)
 			TeleporterOwner2[owner] = 0;
 	}
 }

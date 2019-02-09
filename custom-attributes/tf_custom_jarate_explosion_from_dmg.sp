@@ -31,7 +31,7 @@ Attributes in this pack:
 #define PLUGIN_VERS "v0.0"
 
 #define PARTICLE_PISSBLAST "peejar_impact"
-#define SOUND_PISSBLAST ""
+#define SOUND_PISSBLAST "peejar_impact_cloud"
 
 public Plugin:my_info = {
   
@@ -71,12 +71,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return Plugin_Continue;
 	
 	if(StrEqual(attrib, "jarate explosion on dmg"))
 	{
 		new String:values[3][10];
-		ExplodeString(values, " ", sizeof(values), sizeof(values[]));
+		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		JarateExplosion_Radius[weapon] = StringToFloat(values[0]);
 		JarateExplosion_Duration[weapon] = StringToFloat(values[1]);
@@ -101,7 +101,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary] && JarateExplosion_Primed[secondary])
 		{
 			ApplyRadiusEffects(victim, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
-			SpawnParticle(victim, _, PARTICLE_PISSBLAST);
+			SpawnParticle(victim, PARTICLE_PISSBLAST);
 			EmitSoundToAll(SOUND_PISSBLAST, victim);
 		}
 	}
