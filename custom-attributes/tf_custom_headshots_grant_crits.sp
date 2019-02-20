@@ -46,7 +46,8 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-	//Unsure of whether I'll need a hook or not
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 }
 
 new bool:StoreCritOnHeadshot[2049];
@@ -91,5 +92,10 @@ public OnEntityDestroyed(ent)
     if(ent < 0 || ent > 2048)
         return;
 	
-	
+	StoreCritOnHeadshot[weapon]				 = false;
+	StoreCritOnHeadshot_Max[weapon] 		 = 0;
+	StoreCritOnHeadshot_Crits[weapon]		 = 0;
+	StoreCritOnHeadshot_KillRequired[weapon] = false;
+	StoreCritOnHeadshot_IsMinicrits[weapon]  = false;
+	StoreCritOnHeadshot_UseOnMiss[weapon] 	 = false;
 }
