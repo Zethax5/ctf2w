@@ -87,6 +87,35 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
+{
+	if(!StoreCritOnHeadshot[weapon])
+		return Plugin_Continue;
+		
+	if(!StoreCritOnHeadshot_UseOnMiss[weapon])
+		return Plugin_Continue;
+	
+	if(StoreCritOnHeadshot_Crits[weapon] > 0)
+		StoreCritOnHeadshot_Crits[weapon]--;
+}
+
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+{
+	if(attacker && victim)
+	{
+		new secondary = GetPlayerWeaponSlot(attacker, 1);
+		new melee = GetPlayerWeaponSlot(attacker, 2);
+		if(StoreCritOnHeadshot[secondary] || StoreCritOnHeadshot[melee])
+		{
+			new wep = secondary;
+			if(!StoreCritOnHeadshot[wep])
+				wep = melee;
+			
+			if(damageCustom)
+		}
+	}
+}
+
 public OnEntityDestroyed(ent)
 {
     if(ent < 0 || ent > 2048)
