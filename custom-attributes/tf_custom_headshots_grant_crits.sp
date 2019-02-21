@@ -2,11 +2,16 @@
 
 Created by: Zethax
 Document created on: February 20th, 2019
-Last edit made on: February 20th, 2019
+Last edit made on: February 21st, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+	- "headshots store crits"
+		DISCLAIMER: Only works on secondary and melee weapons
+		1) Maximum amount of crits that can be stored
+		2) Whether or not a headshot kill is required to grant crits, or only the headshot
+		3) Whether or not firing the weapon at all uses crits, rather than only on hit
+		4) Whether or not the weapon accumulates minicrits instead of crits
 
 */
 
@@ -80,6 +85,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		if(StringToInt(values[3]) >= 1)
 			StoreCritOnHeadshot_IsMinicrits[weapon] = true;
 		
+		//Initializes ammo counter
+		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
+		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+		
 		StoreCritOnHeadshot[weapon] = true;
 		action = Plugin_Handled;
 	}
@@ -111,9 +120,58 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 			if(!StoreCritOnHeadshot[wep])
 				wep = melee;
 			
-			if(damageCustom)
+			if(damageCustom == TF_CUSTOM_HEADSHOT)
+			{
+				if(StoreCritOnHeadshot_KillRequired[wep] && damage >= GetClientHealth(victim))
+				{
+					StoreCritOnHeadshot_Crits[wep]++;
+					if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
+						StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
+				}
+				else
+				{
+					StoreCritOnHeadshot_Crits[wep]++;
+					if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
+						StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
+				}
+			}
+		}
+		if(StoreCritOnHeadshot[weapon] && !StoreCritOnHeadshot_UseOnMiss[weapon])
+		{
+			StoreCritOnHeadshot[weapon]--;
+			if(StoreCritOnHeadshot_Crits[weapon] < 0)
+				StoreCritOnHeadshot_Crits[weapon] = 0;
 		}
 	}
+	return Plugin_Continue;
+}
+
+public OnClientPreThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(!StoreCritOnHeadshot[weapon])
+		return;
+	
+	if(GetEngineTime() >= LastTick[client] + 0.1)
+	{
+		StoreCritOnHeadshot_PreThink(client, weapon);
+		LastTick[client] = GetEngineTime();
+	}
+}
+
+static void StoreCritOnHeadshot_PreThink(client, weapon)
+{
+	if(StoreCritOnHeadshot_Crits[weapon] > 0)
+		TF2_AddCondition(client, TFCond_CritBoosted, 0.2);
+	
+	//Sets ammo display to show stacks
+	SetEntProp(weapon, Prop_Send, "m_iClip1", StoreCritOnHeadshot_Crits[weapon]);
 }
 
 public OnEntityDestroyed(ent)
