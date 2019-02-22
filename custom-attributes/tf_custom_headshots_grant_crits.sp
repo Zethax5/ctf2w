@@ -78,11 +78,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		StoreCritOnHeadshot_Max[weapon] = StringToInt(values[0]);
-		if(StringToInt(values[1]) >= 1)
+		if(strlen(values[1]))
 			StoreCritOnHeadshot_KillRequired[weapon] = true;
-		if(StringToInt(values[2]) >= 1)
+		if(strlen(values[2]))
 			StoreCritOnHeadshot_UseOnMiss[weapon] = true;
-		if(StringToInt(values[3]) >= 1)
+		if(strlen(values[3]))
 			StoreCritOnHeadshot_IsMinicrits[weapon] = true;
 		
 		//Initializes ammo counter
