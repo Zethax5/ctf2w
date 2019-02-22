@@ -62,6 +62,8 @@ new bool:StoreCritOnHeadshot_KillRequired[2049];
 new bool:StoreCritOnHeadshot_UseOnMiss[2049];
 new bool:StoreCritOnHeadshot_IsMinicrits[2049];
 
+new Float:LastTick[MAXPLAYERS + 1];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
@@ -106,6 +108,8 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	
 	if(StoreCritOnHeadshot_Crits[weapon] > 0)
 		StoreCritOnHeadshot_Crits[weapon]--;
+		
+	return Plugin_Continue;
 }
 
 public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
@@ -168,7 +172,7 @@ public OnClientPreThink(client)
 static void StoreCritOnHeadshot_PreThink(client, weapon)
 {
 	if(StoreCritOnHeadshot_Crits[weapon] > 0)
-		TF2_AddCondition(client, TFCond_CritBoosted, 0.2);
+		TF2_AddCondition(client, TFCond_CritCanteen, 0.2);
 	
 	//Sets ammo display to show stacks
 	SetEntProp(weapon, Prop_Send, "m_iClip1", StoreCritOnHeadshot_Crits[weapon]);
@@ -179,10 +183,10 @@ public OnEntityDestroyed(ent)
     if(ent < 0 || ent > 2048)
         return;
 	
-	StoreCritOnHeadshot[weapon]				 = false;
-	StoreCritOnHeadshot_Max[weapon] 		 = 0;
-	StoreCritOnHeadshot_Crits[weapon]		 = 0;
-	StoreCritOnHeadshot_KillRequired[weapon] = false;
-	StoreCritOnHeadshot_IsMinicrits[weapon]  = false;
-	StoreCritOnHeadshot_UseOnMiss[weapon] 	 = false;
+	StoreCritOnHeadshot[ent]				 = false;
+	StoreCritOnHeadshot_Max[ent] 		 = 0;
+	StoreCritOnHeadshot_Crits[ent]		 = 0;
+	StoreCritOnHeadshot_KillRequired[ent] = false;
+	StoreCritOnHeadshot_IsMinicrits[ent]  = false;
+	StoreCritOnHeadshot_UseOnMiss[ent] 	 = false;
 }
