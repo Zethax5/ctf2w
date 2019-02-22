@@ -3,10 +3,16 @@
 Created by: Zethax
 Document created on: February 21st, 2019
 Last edit made on: February 21st, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	- "weapon charges sniper rifle"
+		1) Amount to gain on hit
+		2) Amount to gain on kill
+		3) Amount to drain on use.
+		
+		Hits and kills charge your sniper rifle/increase your bow's charge rate.
+		Upon firing your minimum charge/charge rate will be reduced.
 
 */
 
