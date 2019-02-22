@@ -175,32 +175,36 @@ static void BuildingUpgrade_ApplyUpgrade(ent, client)
 	new maxhealth;
 	if(ent > 0)
 	{
-		upgradelvl = GetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel");
-		maxhealth = GetEntProp(ent, Prop_Data, "m_iMaxHealth");
-		health = GetEntProp(ent, Prop_Data, "m_iHealth");
-		
-		if(upgradelvl < 3)
+		new HasSapper = GetEntProp(ent, Prop_Send, "m_bHasSapper");
+		if(!HasSapper)
 		{
-			if(IsClassname(ent, "obj_sentrygun"))
-				PrintToChat(client, "Your SENTRY was upgraded");
-			if(IsClassname(ent, "obj_dispenser"))
-				PrintToChat(client, "Your DISPENSER was upgraded");
-			if(IsClassname(ent, "obj_teleporter"))
-				PrintToChat(client, "Your TELEPORTER was upgraded");
+			upgradelvl = GetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel");
+			maxhealth = GetEntProp(ent, Prop_Data, "m_iMaxHealth");
+			health = GetEntProp(ent, Prop_Data, "m_iHealth");
 			
+			if(upgradelvl < 3)
+			{
+				if(IsClassname(ent, "obj_sentrygun"))
+					PrintToChat(client, "Your SENTRY was upgraded");
+				if(IsClassname(ent, "obj_dispenser"))
+					PrintToChat(client, "Your DISPENSER was upgraded");
+				if(IsClassname(ent, "obj_teleporter"))
+					PrintToChat(client, "Your TELEPORTER was upgraded");
+				
+			}
+			if(upgradelvl == 3 && health < maxhealth)
+			{
+				if(IsClassname(ent, "obj_sentrygun"))
+					PrintToChat(client, "Your SENTRY was healed");
+				if(IsClassname(ent, "obj_dispenser"))
+					PrintToChat(client, "Your DISPENSER was healed");
+				if(IsClassname(ent, "obj_teleporter"))
+					PrintToChat(client, "Your TELEPORTER was healed");
+			}
+			
+			SetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel", 3);
+			SetEntityHealth(ent, maxhealth);
 		}
-		if(upgradelvl == 3 && health < maxhealth)
-		{
-			if(IsClassname(ent, "obj_sentrygun"))
-				PrintToChat(client, "Your SENTRY was healed");
-			if(IsClassname(ent, "obj_dispenser"))
-				PrintToChat(client, "Your DISPENSER was healed");
-			if(IsClassname(ent, "obj_teleporter"))
-				PrintToChat(client, "Your TELEPORTER was healed");
-		}
-		
-		SetEntProp(ent, Prop_Send, "m_iHighestUpgradeLevel", 3);
-		SetEntityHealth(ent, maxhealth);
 	}
 }
 
