@@ -67,6 +67,21 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	int assister = GetClientOfUserId(event.GetInt("assister"));
 	int weaponid = event.GetInt("weaponid");
 	
+	if(assister)
+	{
+		g_flStoredHolidayPunchCritTime[assister] += TIME_HOLIDAY_PUNCH_INCREMENT / 2.0;
+		
+		if (g_flStoredHolidayPunchCritTime[assister] > TIME_HOLIDAY_PUNCH_MAXIMUM) {
+			g_flStoredHolidayPunchCritTime[assister] = TIME_HOLIDAY_PUNCH_MAXIMUM;
+		}
+		
+		int melee = GetPlayerWeaponSlot(assister, 2);
+		if (!IsValidEntity(melee)
+				|| TF2_GetItemDefinitionIndex(melee) != TF_ECON_DEFINDEX_HOLIDAY_PUNCH) {
+			g_flStoredHolidayPunchCritTime[assister] = 0.0;
+		}
+	}
+	
 	if (weaponid != TF_WEAPON_MINIGUN) {
 		return;
 	}
@@ -83,7 +98,6 @@ public void OnPlayerDeath(Event event, const char[] name, bool dontBroadcast) {
 	}
 	
 	g_flStoredHolidayPunchCritTime[attacker] += TIME_HOLIDAY_PUNCH_INCREMENT;
-	g_flStoredHolidayPunchCritTime[assister] += TIME_HOLIDAY_PUNCH_INCREMENT / 2;
 	
 	if (g_flStoredHolidayPunchCritTime[attacker] > TIME_HOLIDAY_PUNCH_MAXIMUM) {
 		g_flStoredHolidayPunchCritTime[attacker] = TIME_HOLIDAY_PUNCH_MAXIMUM;
