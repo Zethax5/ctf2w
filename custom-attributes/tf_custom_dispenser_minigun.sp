@@ -198,7 +198,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 		radmult++;
 	new AmountHealed;
 	
-	new buttons = GetClientButtons(client);
+	//new buttons = GetClientButtons(client);
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
 		if(ReduceHealingSpinning[weapon])
@@ -238,10 +238,10 @@ static void DispenserMinigun_PostThink(client, weapon)
 						AmountHealed += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
 						new Float:position[3];
 						position[2] += 75;
-						if(GetClientTeam(i) == TFTeam_Blue)
-							SpawnParticle(i, position, "healthgained_blu");
-						if(GetClientTeam(i) == TFTeam_Red)
-							SpawnParticle(i, position, "healthgained_blu");
+						if(TF2_GetClientTeam(i) == TFTeam_Blue)
+							SpawnParticle(i, "healthgained_blu", position);
+						if(TF2_GetClientTeam(i) == TFTeam_Red)
+							SpawnParticle(i, "healthgained_blu", position);
 					}
 					
 					//Function that actually heals the player, because Sourcemod and TF2

@@ -203,7 +203,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 						}
 					}
 					
-					SpawnParticle(vict, _, PARTICLE_EXPLODE);
+					SpawnParticle(vict, PARTICLE_EXPLODE);
 					EmitSoundToAll(SOUND_EXPLODE, vict);
 					
 					ShieldExplodes[vict]         = false;
@@ -262,7 +262,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 							}
 						}
 						
-						SpawnParticle(victim, _, PARTICLE_EXPLODE);
+						SpawnParticle(victim, PARTICLE_EXPLODE);
 						EmitSoundToAll(SOUND_EXPLODE, victim);
 						
 						ShieldExplodes[victim]         = false;

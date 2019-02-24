@@ -35,6 +35,8 @@ Attributes in this pack:
 
 #define PARTICLE_SPEED "powerup_icon_haste"
 
+new Handle:hudText_Client;
+
 public Plugin:my_info = {
   
 	name        = PLUGIN_NAME,
@@ -56,6 +58,8 @@ public OnPluginStart() {
   
 		OnClientPutInServer(i);
 	}
+	
+	hudText_Client = CreateHudSynchronizer();
 }
 
 public OnMapStart()
@@ -218,6 +222,9 @@ static void StackSpeedOnKill_Think(client, weapon)
 		}
 		SpunUp[client] = false;
 	}
+	
+	SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
+	ShowSyncHudText(client, hudText_Client, "Stacks: %i / %i", StackSpeedOnKill_Stacks[weapon], StackSpeedOnKill_MaxStacks[weapon]);
 	
 	LastTick[client] = GetEngineTime();
 }

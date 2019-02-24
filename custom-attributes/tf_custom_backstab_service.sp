@@ -63,7 +63,7 @@ new bool:BackstabService[2049];
 new Float:BackstabService_MoveSpd[2049];
 new Float:BackstabService_CloakSpd[2049]; 
 new Float:BackstabService_DecloakSpd[2049];
-new Float:BackstabService_Debuff[2049];
+//new Float:BackstabService_Debuff[2049];
 new BackstabService_MaxStacks[2049];
 new BackstabService_Stacks[2049];
 
@@ -78,14 +78,14 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	if(StrEqual(attrib, "backstab service"))
 	{
-		new String:values[5][10];
+		new String:values[4][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		BackstabService_MaxStacks[weapon] = StringToInt(values[0]);
 		BackstabService_MoveSpd[weapon] = StringToFloat(values[1]);
 		BackstabService_CloakSpd[weapon] = StringToFloat(values[2]);
 		BackstabService_DecloakSpd[weapon] = StringToFloat(values[3]);
-		BackstabService_Debuff[weapon] = StringToFloat(values[4]);
+		//BackstabService_Debuff[weapon] = StringToFloat(values[4]);
 		
 		//Initializes ammo counter
 		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
@@ -116,7 +116,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			TF2Attrib_SetByName(weapon, "move speed bonus", 1.0 + (BackstabService_MoveSpd[weapon] * BackstabService_Stacks[weapon]));
 			TF2Attrib_SetByName(weapon, "mult cloak rate", 0.0 - (BackstabService_CloakSpd[weapon] * BackstabService_Stacks[weapon]));
 			TF2Attrib_SetByName(weapon, "mult decloak rate", 1.0 - (BackstabService_DecloakSpd[weapon] * BackstabService_Stacks[weapon]));
-			TF2Attrib_SetByName(weapon, "SET BONUS: cloak blink time penalty", 1.0 + (BackstabService_Debuff[weapon] * BackstabService_Stacks[weapon]));
+			//TF2Attrib_SetByName(weapon, "SET BONUS: cloak blink time penalty", 1.0 + (BackstabService_Debuff[weapon] * BackstabService_Stacks[weapon]));
 			TF2_AddCondition(attacker, TFCond_SpeedBuffAlly, 0.001); //Updates player's movement speed
 		}
 	}
@@ -132,7 +132,7 @@ public OnEntityDestroyed(ent)
 	BackstabService_MoveSpd[ent] = 0.0;
 	BackstabService_CloakSpd[ent] = 0.0;
 	BackstabService_DecloakSpd[ent] = 0.0;
-	BackstabService_Debuff[ent] = 0.0;
+	//BackstabService_Debuff[ent] = 0.0;
 	BackstabService_MaxStacks[ent] = 0;
 	BackstabService_Stacks[ent] = 0;
 }

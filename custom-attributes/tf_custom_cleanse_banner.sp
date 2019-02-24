@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Thursday, December 20th, 2018
-Last edit made on: Thursday, January 3rd, 2019
+Last edit made on: Friday, February 22nd, 2019
 Current version: v0.1
 
 Attributes in this pack:
@@ -13,14 +13,15 @@ Attributes in this pack:
 #pragma semicolon 1
 #include <sourcemod>
 #include <cw3-attributes>
-#include <tf2>
+#include <tf2_stocks>
 #include <sdkhooks>
 #include <sdktools>
 #include <zethax>
 #include <tf2attributes>
+#include <tf_cond_info>
 
 #define PLUGIN_AUTHOR  "Zethax"
-#define PLUGIN_DESC    "All custom attributes for custom Soldier weapons on the cTF2w server."
+#define PLUGIN_DESC    "Adds an attribute associated with a healing buff banner."
 #define PLUGIN_NAME    "Cleanse Banner"
 #define PLUGIN_VERS    "v0.1"
 
@@ -60,8 +61,7 @@ new CleanseBanner_Healing[2049];
 new CleanseBanner_NumPlayers[2049];
 new bool:CleanseBanner_ToHeal[MAXPLAYERS + 1];
 new CleanseBanner_Healer[MAXPLAYERS + 1];
-new CleanseBanner_Delay[2049];
-new bool:BuffRemoved[2049];
+new Float:CleanseBanner_Delay[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -95,11 +95,14 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public OnClientPostThink(client)
 {	
+	if(!IsValidClient(client))
+		return;
+	
 	//Because of the way custom buff banners work, this needs to be put in place
 	//The system only applies the effects 5 times per second
 	//This is to keep the system from getting overloaded
 	if(CleanseBanner_Delay[client] > GetEngineTime() + 0.2)
-	CleanseBanner_PostThink(client);
+		CleanseBanner_PostThink(client);
 }
 
 public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBroadcast)
@@ -109,9 +112,6 @@ public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBr
   {
     BuffDeployed[client] = true;
   }
-  
-  if(GetEntPropFloat(client, Prop_Send, "m_flRageMeter") <= 0.1)
-    BuffDeployed[client] = false;
 }
 
 static void CleanseBanner_PostThink(client)
@@ -121,8 +121,10 @@ static void CleanseBanner_PostThink(client)
   
 	new banner = GetPlayerWeaponSlot(client, 1);
   	
+  	if(banner < 0 || banner > 2048)
+  		return;
   	
-  		TF2Attrib_SetByName(weapon, "mod soldier buff type", 420.0);
+  	TF2Attrib_SetByName(banner, "mod soldier buff type", 420.0);
   	
 	CleanseBanner_NumPlayers[banner] = 0;
 	if(CleanseBanner[banner] && BuffDeployed[client])
@@ -143,7 +145,14 @@ static void CleanseBanner_PostThink(client)
 					CleanseBanner_ToHeal[i] = true;
 					CleanseBanner_Healer[i] = client;
 					CleanseBanner_NumPlayers[banner]++;
-					//Insert debuff reduction stuff here
+					
+					ApplyDebuffReduction(client, TFCond_OnFire, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_Jarated, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_Milked, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_Bleeding, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_Gas, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_MarkedForDeath, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(client, TFCond_MarkedForDeathSilent, CleanseBanner_DebuffRed[banner]);
 				}
 			}
 		}
@@ -156,7 +165,7 @@ static void CleanseBanner_PostThink(client)
 		new healer = CleanseBanner_Healer[client];
 		if(IsValidClient(healer))
 		{
-			new banner = GetPlayerWeaponSlot(healer, 1);
+			banner = GetPlayerWeaponSlot(healer, 1);
 			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
 			{
 				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
@@ -165,6 +174,11 @@ static void CleanseBanner_PostThink(client)
 			}
 		}
 	}
+	
+	if(GetEntPropFloat(client, Prop_Send, "m_flRageMeter") <= 0.1)
+    	BuffDeployed[client] = false;
+	
+	CleanseBanner_Delay[client] = GetEngineTime();
 }
 
 public OnEntityDestroyed(ent)
@@ -173,7 +187,24 @@ public OnEntityDestroyed(ent)
 		return;
 	
 	CleanseBanner[ent] = false;
-	CleanseBanner_NumPlayer[ent] = 0;
+	CleanseBanner_NumPlayers[ent] = 0;
 	CleanseBanner_DebuffRed[ent] = 0.0;
 	CleanseBanner_Healing[ent] = 0;
+}
+
+//everything below this point is all code from Pikachu
+//He takes all the credit. I would have never figured any of this out
+
+void ApplyDebuffReduction(int client, TFCond cond, float flDebuffScale) {
+	if (!TF2_IsPlayerInCondition(client, cond)) {
+		return;
+	}
+	
+	float flDuration = TF2_GetConditionData(client, cond, ConditionInfo_Duration);
+	if (flDuration == TFCondDuration_Infinite) {
+		return;
+	}
+	
+	TF2_SetConditionData(client, cond, ConditionInfo_Duration,
+			flDuration - (GetGameFrameTime() * flDebuffScale));
 }

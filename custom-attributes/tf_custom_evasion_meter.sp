@@ -136,7 +136,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 					//Visuals & sounds
 					new Float:Pos[3];
 					Pos[2] += 75;
-					SpawnParticle(victim, Pos, PARTICLE_DODGE);
+					SpawnParticle(victim, PARTICLE_DODGE, Pos);
 					EmitSoundToAll(SOUND_DODGE, victim);
 					  
 					//Setting damage to 0
