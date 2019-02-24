@@ -195,7 +195,7 @@ I basically stole this from Orion, who might have stolen it from smlib.
 @param dmg_type				The type of damage being dealt. Defaults to DMG_GENERIC
 @param logname				How it displays in the server log/player console
 */
-stock DealDamage(victim, damage, attacker=0, dmg_type=DMG_GENERIC ,String:logname[]="")
+stock DealDamage(victim, damage, attacker=0, dmg_type=HL_DMG_GENERIC ,String:logname[]="")
 {
     if(victim>0 && IsValidEdict(victim) && IsClientInGame(victim) && IsPlayerAlive(victim) && damage>0)
     {
@@ -238,14 +238,16 @@ stock HealPlayer(healer = -1, patient = -1, amount = 0, Float:overheal = 1.0)
 	new maxhealth = GetClientMaxHealth(patient);
 	if(amount > 0)
 	{
-		if(health < maxhealth * overheal)
+		health += amount;
+		SetEntityHealth(patient, health);
+		new Handle:healevent = CreateEvent("player_healed", true);
+		SetEventInt(healevent, "patient", patient);
+		SetEventInt(healevent, "healer", healer);
+		SetEventInt(healevent, "amount", amount);
+		FireEvent(healevent);
+		if(health > maxhealth * overheal)
 		{
-			SetEntityHealth(patient, health + amount);
-			new Handle:healevent = CreateEvent("player_healed", true);
-			SetEventInt(healevent, "patient", patient);
-			SetEventInt(healevent, "healer", healer);
-			SetEventInt(healevent, "amount", amount);
-			FireEvent(healevent);
+			health = maxhealth * overheal;
 		}
 	}
 }
@@ -255,12 +257,13 @@ Spawns a particle effect. Thanks to Orion for lending me the code for this.
 @param client				The client creating the particle
 @param particle				The name of the particle being spawned
 */
-stock SpawnParticle(client, String:particleName[]="")
+stock SpawnParticle(client, String:particleName[]="", Float:addPos[3] = NULL_VECTOR)
 {
 	if (client <= 0 || client > MaxClients)return;
 	new particle = CreateEntityByName( "info_particle_system" );
 	new Float:m_flPosition[3];
 	GetClientAbsOrigin(client, m_flPosition);
+	AddVectors(m_flPosition, addPos, m_flPosition);
 	if ( IsValidEntity( particle ) )
 	{
 		TeleportEntity( particle, m_flPosition, NULL_VECTOR, NULL_VECTOR );
@@ -425,8 +428,7 @@ Gets the classname of the given entity. Credit goes to Chawlz since I stole this
 */
 stock bool:IsClassname(entity, String:strClassname[])
 {
-	if(entity <= 0) return false;
-	if(!IsValidEdict(entity)) return false;
+	if(entity < 0 || entity > 2048) return false;
 	
 	decl String:strClassname2[32];
 	GetEdictClassname(entity, strClassname2, sizeof(strClassname2));
@@ -453,7 +455,7 @@ stock any:AttachParticle(ent, String:particleType[], Float:time = 0.0, Float:add
 		new Float:pos[3];
 		new Float:ang[3];
 		decl String:tName[32];
-		Entity_GetAbsOrigin(ent, pos);
+		GetEntPropVector(ent, Prop_Send, "m_vecOrigin", pos);
 		AddVectors(pos, addPos, pos);
 		GetEntPropVector(ent, Prop_Send, "m_angRotation", ang);
 		AddVectors(ang, addAngle, ang);
