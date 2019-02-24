@@ -15,7 +15,7 @@ Attributes in this pack:
 		For every stack, the player gains X% movement speed and X% damage penalty.
 		The movement speed bonus does not apply while spun up or aiming.
 		A haste icon appears above the player's head at 50% stacks or more.
-
+		Assist kills grant half as many stacks as kills.
 */
 
 #pragma semicolon 1

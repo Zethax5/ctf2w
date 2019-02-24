@@ -3,10 +3,16 @@
 Created by: Zethax
 Document created on: February 21st, 2019
 Last edit made on: February 21st, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	- "weapon charges sniper rifle"
+		1) Amount to gain on hit
+		2) Amount to gain on kill
+		3) Amount to lose upon firing sniper/bow
+		
+		On hit/kill gain X% minimum sniper charge/bow charge rate
+		Upon firing your sniper/bow you lose X% of this charge
 
 */
 
@@ -23,7 +29,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_weapon_charges_sniper"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute that charges your sniper rifle on kill"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   

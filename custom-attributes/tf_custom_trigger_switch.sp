@@ -6,7 +6,12 @@ Last edit made on: Tuesday, January 8th, 2019
 Current version: v1.0
 
 Attributes in this pack
-  None so far
+	- "trigger switch attrib"
+		1) Any value to enable
+		
+		When applied to a weapon, press Special-Attack to switch damage modes.
+		Mode 1: Increased firing speed, reload speed, reduced blast radius, grenades fizzle
+		Mode 2: Large blast radius, reduced damage, increased fuse time
 
 */
 

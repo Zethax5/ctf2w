@@ -7,10 +7,14 @@ just to find the code associated with this attribute in there.
 Created by: Zethax
 Document created on: January 22nd, 2019
 Last edit made on: January 22nd, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	- "ubercharge is radial"
+		1) Radius of the ubercharge
+		2-4) Conditions to grant allies in the radius
+		
+		While ubercharged all nearby allies will gain X conditions
 
 */
 	
@@ -26,7 +30,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_radial_ubercharge"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in a custom attribute associated with the radial ubercharge"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
 	

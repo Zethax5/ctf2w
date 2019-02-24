@@ -3,10 +3,16 @@
 Created by: Zethax
 Document created on: Thursday, December 20th, 2018
 Last edit made on: Friday, February 22nd, 2019
-Current version: v0.1
+Current version: v0.9
 
 Attributes in this pack:
-  None so far
+	- "soldier buff is cleanse"
+		1) Debuff duration reduction
+		2) Amount to heal per person per second
+		
+		Deal damage to gain a buff banner.
+		When full, use to grant yourself and nearby allies reduced debuff duration
+		and X healing per second based on how many players are in the radius
 
 */
 
@@ -23,7 +29,7 @@ Attributes in this pack:
 #define PLUGIN_AUTHOR  "Zethax"
 #define PLUGIN_DESC    "Adds an attribute associated with a healing buff banner."
 #define PLUGIN_NAME    "Cleanse Banner"
-#define PLUGIN_VERS    "v0.1"
+#define PLUGIN_VERS    "v0.9"
 
 public Plugin:my_info = {
   
