@@ -55,7 +55,7 @@ public OnPluginStart() {
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
 public OnMapStart()
@@ -105,7 +105,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
 	new Action:action;
 	if(IsValidClient(attacker) && IsValidClient(victim))
@@ -116,7 +116,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			{
 				EvasionMeter_Charge[weapon] += EvasionMeter_Gain[weapon];
 				if(EvasionMeter_Charge[weapon] > 1.0)
-		       	EvasionMeter_Charge[weapon] = 1.0;
+		       		EvasionMeter_Charge[weapon] = 1.0;
 			}
 			if(EvasionMeter[GetActiveWeapon(victim)])
 			{
