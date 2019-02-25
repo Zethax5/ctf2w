@@ -8,6 +8,7 @@ Current version: v0.0
 Attributes in this pack:
 	- "headshots store crits"
 		DISCLAIMER: Only works on secondary and melee weapons
+		Note: Only value 1 is mandatory. All other values can be undefined.
 		1) Maximum amount of crits that can be stored
 		2) Whether or not a headshot kill is required to grant crits, or only the headshot
 		3) Whether or not firing the weapon at all uses crits, rather than only on hit
@@ -80,11 +81,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		StoreCritOnHeadshot_Max[weapon] = StringToInt(values[0]);
-		if(strlen(values[1]))
+		if(strlen(values[1]) && StringToInt(values[1]) > 0)
 			StoreCritOnHeadshot_KillRequired[weapon] = true;
-		if(strlen(values[2]))
+		if(strlen(values[2]) && StringToInt(values[2]) > 0)
 			StoreCritOnHeadshot_UseOnMiss[weapon] = true;
-		if(strlen(values[3]))
+		if(strlen(values[3]) && StringToInt(values[3]) > 0)
 			StoreCritOnHeadshot_IsMinicrits[weapon] = true;
 		
 		//Initializes ammo counter
@@ -116,14 +117,11 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	if(attacker && victim)
 	{
-		new secondary = GetPlayerWeaponSlot(attacker, 1);
-		new melee = GetPlayerWeaponSlot(attacker, 2);
-		if(StoreCritOnHeadshot[secondary] || StoreCritOnHeadshot[melee])
+		new wep = GetPlayerWeaponSlot(attacker, 1);
+		if(wep < 0)
+			wep = GetPlayerWeaponSlot(attacker, 2);
+		if(StoreCritOnHeadshot[wep])
 		{
-			new wep = secondary;
-			if(!StoreCritOnHeadshot[wep])
-				wep = melee;
-			
 			if(damageCustom == TF_CUSTOM_HEADSHOT)
 			{
 				if(StoreCritOnHeadshot_KillRequired[wep] && damage >= GetClientHealth(victim))
