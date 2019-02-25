@@ -42,6 +42,12 @@ public Plugin:my_info = {
 	url         = ""
 };
 
+public OnMapStart()
+{
+	PrecacheSound(SOUND_PISSBLAST, true);
+	PrecacheParticle(PARTICLE_PISSBLAST);
+}
+
 public OnPluginStart() {
  
 	for(new i = 1 ; i < MaxClients ; i++)
@@ -68,10 +74,6 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 {
 	if(!StrEqual(plugin, PLUGIN_NAME))
   		return Plugin_Continue;
-		
-	new weapon = GetPlayerWeaponSlot(client, slot);
-	if(weapon < 0 || weapon > 2048)
-		return Plugin_Continue;
 	
 	if(StrEqual(attrib, "jarate explosion on dmg"))
 	{
@@ -95,14 +97,13 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	if(attacker && victim)
 	{
 		new secondary = GetPlayerWeaponSlot(victim, 1);
-		if(secondary < 0 || secondary > 2048)
-			return Plugin_Continue;
 		
 		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary] && JarateExplosion_Primed[secondary])
 		{
 			ApplyRadiusEffects(victim, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
 			SpawnParticle(victim, PARTICLE_PISSBLAST);
 			EmitSoundToAll(SOUND_PISSBLAST, victim);
+			JarateExplosion_Primed[secondary] = false;
 		}
 	}
 	return Plugin_Continue;
