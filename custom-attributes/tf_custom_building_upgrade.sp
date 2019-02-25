@@ -133,15 +133,15 @@ public OnClientPostThinkPost(client)
 	if(!IsValidClient(client))
 		return;
 	
-	new weapon = GetActiveWeapon(client);
-	if(weapon < 0 || weapon > 2048)
+	new melee = GetPlayerWeaponSlot(client, 2);
+	if(melee < 0 || melee > 2048)
 		return;
 	
-	if(!BuildingUpgrade[weapon])
+	if(!BuildingUpgrade[melee])
 		return;
 	
 	if(GetEngineTime() > LastTick[client] + 0.1)
-		BuildingUpgrade_PostThink(client, weapon);
+		BuildingUpgrade_PostThink(client, melee);
 }
 
 static void BuildingUpgrade_PostThink(client, weapon)
