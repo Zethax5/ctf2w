@@ -62,6 +62,7 @@ new Float:RadialUbercharge_Radius[2049];
 new RadialUbercharge_Effect1[2049];
 new RadialUbercharge_Effect2[2049];
 new RadialUbercharge_Effect3[2049];
+new Float:Boosted[MAXPLAYERS + 1];
 
 //Used to keep track of when the ubercharge prethink ticked
 //So we're not overloading the server every tick
@@ -98,9 +99,15 @@ public void OnClientPreThink(client)
 {
 	if(!IsValidClient(client))
 		return;
+		
+	if(Boosted[client] > 0.0 && GetEngineTime() >= Boosted[client] + 0.35)
+	{	
+		TF2_AddCondition(client, TFCond_SpeedBuffAlly, 0.001);
+		Boosted[client] = 0.0;
+	}
 	
 	new weapon = GetActiveWeapon(client);
-	if(weapon < 0 || weapon > 2048)
+	if(weapon < 0 | weapon > 2048)
 		return;
 	
 	if(!RadialUbercharge[weapon])
@@ -121,6 +128,7 @@ static void RadialUbercharge_PreThink(client, weapon)
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
+			Boosted[i] = GetEngineTime();
 		}
 		
 		new Float:Pos1[3];
@@ -138,6 +146,7 @@ static void RadialUbercharge_PreThink(client, weapon)
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
+					Boosted[i] = GetEngineTime();
 				}
 			}
 		}
