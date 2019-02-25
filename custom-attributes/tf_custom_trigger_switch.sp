@@ -88,7 +88,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     TF2Attrib_SetByName(weapon, "fire rate bonus", 0.8);
     TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
     TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
-    TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.1);
+    TF2Attrib_SetByName(weapon, "sticky air burst mode", 2.0);
     
     action = Plugin_Handled;
   }
@@ -123,7 +123,7 @@ static void DrunkardsWrath_PostThink(client)
       TF2Attrib_SetByName(weapon, "fire rate bonus", 0.8);
       TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
       TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
-      TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.1);
+      TF2Attrib_SetByName(weapon, "sticky air burst mode", 2.0);
       
       //Removing attributes used by AoE mode
       TF2Attrib_RemoveByName(weapon, "damage penalty");
@@ -147,7 +147,7 @@ static void DrunkardsWrath_PostThink(client)
       TF2Attrib_RemoveByName(weapon, "Blast radius decreased");
       TF2Attrib_RemoveByName(weapon, "fire rate bonus");
       TF2Attrib_RemoveByName(weapon, "Reload time decreased");
-      TF2Attrib_RemoveByName(weapon, "stickybomb fizzle time");
+      TF2Attrib_RemoveByName(weapon, "sticky air burst mode");
       
       DrunkardsWrath_Mode[weapon] = true; //Tells the system gun is in AoE mode
       EmitSoundToClient(client, "weapons/vaccinator_toggle.wav"); //Plays a sound
