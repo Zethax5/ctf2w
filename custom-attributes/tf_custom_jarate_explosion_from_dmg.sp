@@ -75,6 +75,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	if(!StrEqual(plugin, PLUGIN_NAME))
   		return Plugin_Continue;
 	
+	new weapon = GetPlayerWeaponSlot(client, slot);
+	
 	if(StrEqual(attrib, "jarate explosion on dmg"))
 	{
 		new String:values[3][10];
