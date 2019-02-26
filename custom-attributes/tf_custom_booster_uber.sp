@@ -78,6 +78,7 @@ new Float:BoosterUber_Dur[MAXPLAYERS + 1];
 new Float:BoosterUber_Protection[2049];
 new BoosterUber_Particle[MAXPLAYERS + 1];
 new bool:Shielded[MAXPLAYERS + 1];
+new Float:BoosterUber_OldDecay[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -92,13 +93,14 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	
 	if(StrEqual(attrib, "ubercharge is booster shot"))
 	{
-		new String:values[4][10];
+		new String:values[5][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		BoosterUber_Drain[weapon] = StringToFloat(values[0]);
 		BoosterUber_Overheal[weapon] = StringToFloat(values[1]);
 		BoosterUber_ShieldDur[weapon] = StringToFloat(values[2]);
 		BoosterUber_Protection[weapon] = StringToFloat(values[3]);
+		BoosterUber_OldDecay[weapon] = StringToFloat(values[4]);
 		
 		//sets ubercharge to an invalid value
 		//making it so it doesn't do anything
@@ -140,7 +142,9 @@ static void BoosterUber_PreThink(client, weapon)
 	
 	if(!BoosterUber[weapon])
 		return;
-		
+	
+	TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon]);
+	
 	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	
 	if((buttons & IN_ATTACK2) == IN_ATTACK2)
@@ -154,6 +158,7 @@ static void BoosterUber_PreThink(client, weapon)
 			BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
 			BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];
 			Shielded[patient] = true;
+			TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon] * 2.0);
 			
 			new Float:pos[3];
 			pos[2] += 100.0;
