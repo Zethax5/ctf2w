@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: February 25th, 2019
-Last edit made on: February 25th, 2019
+Last edit made on: February 26th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -53,7 +53,10 @@ new bool:TankUpgrades[2049];
 new Float:TankUpgrades_Charge[2049];
 new Float:TankUpgrades_MaxCharge[2049];
 new Float:TankUpgrades_AddPerLevel[2049];
-new Float:TankUpgrades_DmgResist[2049];
+new Float:TankUpgrades_DmgResistDur[2049];
+new Float:TankUpgrades_AddDurPerLevel[2049];
+new Float:TankUpgrades_DealtChargeRate[2049];
+new Float:TankUpgrades_TakenChargeRate[2049];
 new TankUpgrades_Level[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
@@ -68,8 +71,15 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	
 	if(StrEqual(attrib, "tanking grants upgrades"))
 	{
-		new String:values[4][10];
+		new String:values[6][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
+		
+		TankUpgrades_MaxCharge[weapon] = StringToFloat(values[0]);
+		TankUpgrades_AddPerLevel[weapon] = StringToFloat(values[1]);
+		TankUpgrades_DmgResistDur[weapon] = StringToFloat(values[2]);
+		TankUpgrades_AddDurPerLevel[weapon] = StringToFloat(values[3]);
+		TankUpgrades_DealtChargeRate[weapon] = StringToFloat(values[4]);
+		TankUpgrades_TakenChargeRate[weapon] = StringToFloat(values[5]);
 		
 		TankUpgrades[weapon] = true;
 		action = Plugin_Handled;
@@ -78,10 +88,22 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+//add in OnTakeDamageAlive
+
+//dunno what I'll need OnClientPreThink for, but it's there
+
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
-	
+	TankUpgrades[ent] = false;
+	TankUpgrades_Charge[ent] = 0.0;
+	TankUpgrades_MaxCharge[ent] = 0.0;
+	TankUpgrades_AddPerLevel[ent] = 0.0;
+	TankUpgrades_DmgResistDur[ent] = 0.0;
+	TankUpgrades_AddDurPerLevel[ent] = 0.0;
+	TankUpgrades_DealtChargeRate[ent] = 0.0;
+	TankUpgrades_TakenChargeRate[ent] = 0.0;
+	TankUpgrades_Level[ent] = 0;
 }
