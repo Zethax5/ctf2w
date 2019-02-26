@@ -104,6 +104,9 @@ public OnClientPostThink(client)
 	if(!IsValidClient(client))
 		return;
 	
+	if(CleanseBanner_ToHeal[client])
+		TF2_RemoveCondition(client, TFCond_Buffed);
+	
 	//Because of the way custom buff banners work, this needs to be put in place
 	//The system only applies the effects 5 times per second
 	//This is to keep the system from getting overloaded
@@ -124,7 +127,27 @@ static void CleanseBanner_PostThink(client)
 {
 	if(!IsValidClient(client))
 		return;
-  
+		
+	//Due to the way the healing works this is how it's done
+	//System tallies up all players in the radius and marks the to be healed
+	//Later, the system will apply the healing after all the players have been tallied up
+	if(CleanseBanner_ToHeal[client])
+	{
+		new healer = CleanseBanner_Healer[client];
+		if(IsValidClient(healer))
+		{
+			banner = GetPlayerWeaponSlot(healer, 1);
+			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
+			{
+				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
+				CleanseBanner_ToHeal[client] = false;
+				CleanseBanner_Healer[client] = -1;
+			}
+		}
+	}
+  	
+	CleanseBanner_Delay[client] = GetEngineTime();
+	
 	new banner = GetPlayerWeaponSlot(client, 1);
   	
   	if(banner < 0 || banner > 2048)
@@ -163,28 +186,9 @@ static void CleanseBanner_PostThink(client)
 			}
 		}
 	}
-	//Due to the way the healing works this is how it's done
-	//System tallies up all players in the radius and marks the to be healed
-	//Later, the system will apply the healing after all the players have been tallied up
-	if(CleanseBanner_ToHeal[client])
-	{
-		new healer = CleanseBanner_Healer[client];
-		if(IsValidClient(healer))
-		{
-			banner = GetPlayerWeaponSlot(healer, 1);
-			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
-			{
-				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
-				CleanseBanner_ToHeal[client] = false;
-				CleanseBanner_Healer[client] = -1;
-			}
-		}
-	}
 	
 	if(GetEntPropFloat(client, Prop_Send, "m_flRageMeter") <= 0.1)
     	BuffDeployed[client] = false;
-	
-	CleanseBanner_Delay[client] = GetEngineTime();
 }
 
 public OnEntityDestroyed(ent)
