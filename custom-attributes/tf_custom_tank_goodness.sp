@@ -1,5 +1,11 @@
 /*
 
+I'm gonna try something new with this one.
+I'm gonna take an approach similar to that of the dispenser minigun attributes.
+These attributes will be modular and almost fully customizable.
+I'll even see if I can make the attributes gained per level customizable.
+I'ma have fun with this!
+
 Created by: Zethax
 Document created on: February 25th, 2019
 Last edit made on: February 26th, 2019
