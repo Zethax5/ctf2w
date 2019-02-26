@@ -23,11 +23,16 @@ Attributes in this pack:
 #include <sdktools>
 #include <cw3-attributes>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "tf_custom_tank_goodness"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in an attribute associated with a tanky Heavy minigun."
 #define PLUGIN_VERS "v0.0"
+
+#define TF_COND_DEFENSEBUFF_HIGH TFCond:45
+
+new Handle:hudText_Client;
 
 public Plugin:my_info = {
   
@@ -47,6 +52,8 @@ public OnPluginStart() {
   
 		OnClientPutInServer(i);
 	}
+	
+	hudText_Client = CreateHudSynchronizer();
 }
 
 public OnClientPutInServer(client)
@@ -65,15 +72,17 @@ new Float:TankUpgrades_DealtChargeRate[2049];
 new Float:TankUpgrades_TakenChargeRate[2049];
 new TankUpgrades_Level[2049];
 
+new Float:LastTick[MAXPLAYERS + 1];
+
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	new Action:action;
 	if(!StrEqual(plugin, PLUGIN_NAME))
-  		return;
+  		return action;
 	
 	new weapon = GetPlayerWeaponSlot(client, slot);
 	if(weapon < 0 || weapon > 2048)
-		return;
+		return action;
 	
 	if(StrEqual(attrib, "tanking grants upgrades"))
 	{
@@ -94,9 +103,90 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-//add in OnTakeDamageAlive
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+{
+	if(attacker)
+	{
+		if(TankUpgrades[weapon])
+		{
+			TankUpgrades_Charge[weapon] += damage * TankUpgrades_DealtChargeRate[weapon];
+			if(TankUpgrades_Charge[weapon] > TankUpgrades_MaxCharge[weapon])
+				TankUpgrades_Charge[weapon] = TankUpgrades_MaxCharge[weapon];
+		}
+	}
+	if(victim)
+	{
+		new wep = GetActiveWeapon(victim);
+		if(wep > 0 && wep < 2049 && TankUpgrades[wep])
+		{
+			TankUpgrades_Charge[wep] += damage * TankUpgrades_TakenChargeRate[wep];
+			if(TankUpgrades_Charge[wep] > TankUpgrades_MaxCharge[wep])
+				TankUpgrades_Charge[wep] = TankUpgrades_MaxCharge[wep];
+		}
+	}
+}
 
-//dunno what I'll need OnClientPreThink for, but it's there
+public OnClientPreThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(!TankUpgrades[weapon])
+		return;
+	
+	if (GetEngineTime() >= LastTick[client] + 0.1)
+		TankUpgrades_PreThink(client, weapon);
+}
+
+static void TankUpgrades_PreThink(client, weapon)
+{
+	if(TankUpgrades_Charge[weapon] >= TankUpgrades_MaxCharge[weapon] && TankUpgrades_Level[weapon] < 6)
+	{
+		TankUpgrades_Level[weapon]++;
+		TankUpgrades_MaxCharge[weapon] += TankUpgrades_AddPerLevel[weapon];
+		TankUpgrades_Charge[weapon] = 0.0;
+		
+		switch(TankUpgrades_Level[weapon])
+		{
+			case 1: 
+			{
+				TF2Attrib_SetByName(weapon, "maxammo primary increased", 1.5);
+			}
+			case 2: 
+			{
+				TF2Attrib_SetByName(weapon, "heal on kill", 80.0);
+			}
+			case 3:
+			{
+				TF2Attrib_SetByName(weapon, "healing received bonus", 1.25);
+			}
+			case 4:
+			{
+				TF2Attrib_SetByName(weapon, "damage force reduction", 0.5);
+				TF2Attrib_SetByName(weapon, "airblast vulnerability multiplier hidden", 0.5);
+			}
+			case 5:
+			{
+				TF2Attrib_SetByName(weapon, "attack projectiles", 1.0);
+			}
+			case 6:
+			{
+				TF2Attrib_SetByName(weapon, "attack projectiles", 2.0);
+				TF2Attrib_SetByName(weapon, "generate rage on damage", 2.0);
+				TankUpgrades_Charge[weapon] = TankUpgrades_MaxCharge[weapon];
+			}
+		}
+		
+		TF2_AddCondition(client, TF_COND_DEFENSEBUFF_HIGH, TankUpgrades_DmgResistDur[weapon] + (TankUpgrades_AddDurPerLevel[weapon] * TankUpgrades_Level[weapon]));
+	}
+	
+	SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
+	ShowSyncHudText(client, hudText_Client, "Upgrade: [%i%%] | [100%%]\nLevel: [%i] | [6]", RoundFloat((TankUpgrades_Charge[weapon] / TankUpgrades_MaxCharge[weapon]) * 100.0), TankUpgrades_Level[weapon]);
+}
 
 public OnEntityDestroyed(ent)
 {
