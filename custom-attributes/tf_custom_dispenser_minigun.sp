@@ -203,8 +203,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		if(ReduceHealingSpinning[weapon])
 		{
-			TF2Attrib_SetByName(weapon, "", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
-			TF2Attrib_SetByName(weapon, "", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medkits
+			TF2Attrib_SetByName(weapon, "reduced_healing_from_medics", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
+			TF2Attrib_SetByName(weapon, "health from packs decreased", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medkits
 		}
 		
 		TF2_AddCondition(client, TFCond:20, 1.0);
@@ -311,8 +311,9 @@ static void DispenserMinigun_PostThink(client, weapon)
 		
 		if(ReduceHealingSpinning[weapon])
 		{
-			TF2Attrib_RemoveByName(weapon, ""); //reduce healing from medics
-			TF2Attrib_RemoveByName(weapon, ""); //reduce healing from medics
+			TF2Attrib_RemoveByName(weapon, "health from packs decreased"); //reduce healing from packs
+			//TF2Attrib_RemoveByName(weapon, "health from healers reduced"); //reduce healing from dispensers
+			TF2Attrib_RemoveByName(weapon, "reduced_healing_from_medics"); //reduce healing from medics
 		}
 	}
 	
