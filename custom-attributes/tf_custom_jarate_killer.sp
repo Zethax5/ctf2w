@@ -47,18 +47,32 @@ public OnPluginStart() {
 
 public OnMapStart() {
 
-	for(new i = 0; i < 7; i++)
-	{
+	for(new i = 0; i <= sizeof(ScoutDominations[]); i++)
 		PrecacheSound(ScoutDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(SoldierDominations[]); i++)
 		PrecacheSound(SoldierDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(PyroDominations[]); i++)
 		PrecacheSound(PyroDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(DemoDominations[]); i++)
 		PrecacheSound(DemoDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(HeavyDominations[]); i++)
 		PrecacheSound(HeavyDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(EngiDominations[]); i++)
 		PrecacheSound(EngiDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(MedicDominations[]); i++)
 		PrecacheSound(MedicDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(SniperDominations[]); i++)
 		PrecacheSound(SniperDominations[i], true);
+	
+	for(new i = 0; i <= sizeof(SpyDominations[]); i++)
 		PrecacheSound(SpyDominations[i], true);
-	}
 }
 
 new bool:JarateKiller[2049];
@@ -70,8 +84,6 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
   		return Plugin_Continue;
 		
 	new weapon = GetPlayerWeaponSlot(client, slot);
-	if(weapon < 0 || weapon > 2048)
-		return Plugin_Continue;
 	
 	if(StrEqual(attrib, "jarate killer"))
 	{
