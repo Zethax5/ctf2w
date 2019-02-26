@@ -79,6 +79,7 @@ new Float:BoosterUber_Protection[2049];
 new BoosterUber_Particle[MAXPLAYERS + 1];
 new bool:Shielded[MAXPLAYERS + 1];
 new Float:BoosterUber_OldDecay[2049];
+new Float:BoosterUber_UseDelay[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -147,27 +148,50 @@ static void BoosterUber_PreThink(client, weapon)
 	
 	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	
-	if((buttons & IN_ATTACK2) == IN_ATTACK2)
+	if((buttons & IN_ATTACK2) == IN_ATTACK2 && GetEngineTime() >= BoosterUber_UseDelay[weapon] + 0.25)
 	{
-		if(ubercharge >= BoosterUber_Drain[weapon] && IsValidClient(GetMediGunPatient(client)) && !Shielded[GetMediGunPatient(client)])
+		if(ubercharge >= BoosterUber_Drain[weapon])
 		{
-			new patient = GetMediGunPatient(client);
-			
-			SetEntityHealth(patient, RoundFloat(GetClientMaxHealth(patient) * BoosterUber_Overheal[weapon]));
-			BoosterUber_Dur[patient] = GetEngineTime();
-			BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
-			BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];
-			Shielded[patient] = true;
-			TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon] * 2.0);
-			
-			new Float:pos[3];
-			pos[2] += 100.0;
-			BoosterUber_Particle[patient] = AttachParticle(patient, PARTICLE_SHIELD, BoosterUber_ShieldDur[weapon], pos);
-			EmitSoundToAll(SOUND_BOOSTERUBER, patient);
-			
-			ubercharge -= BoosterUber_Drain[weapon];
-			SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
+			if(IsValidClient(GetMedigunPatient(client)) && !Shielded[GetMedigunPatient(client)])
+			{
+				new patient = GetMediGunPatient(client);
+				new maxhealth = GetClientMaxHealth(patient);
+				if(TF2_GetPlayerClass(patient) == TFClass_Heavy)
+					maxhealth = 400;
+
+				SetEntityHealth(patient, RoundFloat(maxhealth * BoosterUber_Overheal[weapon]));
+				BoosterUber_Dur[patient] = GetEngineTime();
+				BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
+				BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];
+				Shielded[patient] = true;
+				TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon] * 2.0);
+
+				new Float:pos[3];
+				pos[2] += 100.0;
+				BoosterUber_Particle[patient] = AttachParticle(patient, PARTICLE_SHIELD, BoosterUber_ShieldDur[weapon], pos);
+				EmitSoundToAll(SOUND_BOOSTERUBER, patient);
+
+				ubercharge -= BoosterUber_Drain[weapon];
+				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
+			}
+			else
+			{
+				SetEntityHealth(client, RoundFloat(GetClientMaxHealth(client) * BoosterUber_Overheal[weapon]);
+				BoosterUber_Dur[client] = GetEngineTime();
+				BoosterUber_ShieldDur[client] = BoosterUber_ShieldDur[weapon];
+				BoosterUber_Protection[client] = BoosterUber_Protection[weapon];
+				Shielded[client] = true;
+				
+				new Float:pos[3];
+				pos[2] += 100.0;
+				BoosterUber_Particle[client] = AttachParticle(client, PARTICLE_SHIELD, BoosterUber_ShieldDur[weapon], pos);
+				EmitSoundToAll(SOUND_BOOSTERUBER, client);
+				
+				ubercharge -= BoosterUber_Drain[weapon];
+				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
+			}
 		}
+		BoosterUber_UseDelay[weapon] = GetEngineTime();
 	}
 	if(ubercharge > 0.99)
 	{
