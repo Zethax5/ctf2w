@@ -1,8 +1,8 @@
 /*
 
 Created by: Zethax
-Document created on: January 11th, 2019
-Last edit made on: January 11th, 2019
+Document created on: February 27th, 2019
+Last edit made on: February 27th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -46,11 +46,14 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
 }
 
 new bool:TurnaboutAmmo[2049];
 new TurnaboutAmmo_Max[2049];
+new TurnaboutAmmo_GainOnSap[2049];
+new TurnaboutAmmo_GainOnBackstab[2049];
+new TurnaboutAmmo_Ammo[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -64,11 +67,54 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	if(StrEqual(attrib, "turnabout ammo"))
 	{
-		new String:values[2][10];
+		new String:values[3][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
+		
+		TurnaboutAmmo_Max[weapon] = StringToInt(values[0]);
+		if(strlen(values[1]))
+			TurnaboutAmmo_GainOnBackstab[weapon] = StringToInt(values[1]);
+		if(strlen(values[2]))
+			TurnaboutAmmo_GainOnSap[weapon] = StringToInt(values[2]);
+		
+		TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
+		TurnaboutAmmo[weapon] = true;
+		action = Plugin_Handled;
 	}
 	
 	return action;
+}
+
+public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
+{
+	if(!TurnaboutAmmo[weapon])
+		return Plugin_Continue;
+	
+	TurnaboutAmmo_Ammo[weapon]--;
+	SetEntProp(weapon, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[weapon]);
+}
+
+public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
+{
+	if(attacker)
+	{
+		if(damageCustom == TF_CUSTOM_BACKSTAB)
+		{
+			new primary = GetPlayerWeaponSlot(attacker, 0);
+			if(primary > -1 && TurnaboutAmmo[primary])
+			{
+				TurnaboutAmmo_Ammo[primary] += TurnaboutAmmo_GainOnBackstab[primary];
+				if(TurnaboutAmmo_Ammo[primary] > TurnaboutAmmo_Max[primary])
+					TurnaboutAmmo_Ammo[primary] = TurnaboutAmmo_Max[primary];
+				
+				SetEntProp(primary, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[primary]);
+			}
+		}
+		if(TurnaboutAmmo[weapon])
+		{
+			TurnaboutAmmo_Ammo[weapon]++;
+			SetEntProp(weapon, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[weapon]);
+		}
+	}
 }
 
 public OnEntityDestroyed(ent)
@@ -76,5 +122,8 @@ public OnEntityDestroyed(ent)
     if(ent < 0 || ent > 2048)
         return;
 	
-	
+	TurnaboutAmmo[ent] = false;
+	TurnaboutAmmo_GainOnSap[ent] = 0;
+	TurnaboutAmmo_GainOnBackstab[ent] = 0;
+	TurnaboutAmmo_Ammo[ent] = 0;
 }
