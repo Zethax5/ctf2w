@@ -12,7 +12,13 @@ Last edit made on: February 26th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+	- "tanking grants upgrades"
+		1) Base maximum charge needed to level up
+		2) How much charge to add per level. Values above 1.0 are additive, values between 0 and 1 are multiplicative.
+		3) Base damage resistance duration on level up
+		4) Time to add per level up. Is additive
+		5) Multiplier for damage dealt to charge
+		6) Multiplier for damage taken to charge
 
 */
 
@@ -147,7 +153,10 @@ static void TankUpgrades_PreThink(client, weapon)
 	if(TankUpgrades_Charge[weapon] >= TankUpgrades_MaxCharge[weapon] && TankUpgrades_Level[weapon] < 6)
 	{
 		TankUpgrades_Level[weapon]++;
-		TankUpgrades_MaxCharge[weapon] += TankUpgrades_AddPerLevel[weapon];
+		if(TankUpgrades_AddPerLevel[weapon] > 1.0 || TankUpgrades_AddPerLevel[weapon] < -1.0)
+			TankUpgrades_MaxCharge[weapon] += TankUpgrades_AddPerLevel[weapon];
+		else
+			TankUpgrades_MaxCharge[weapon] += TankUpgrades_MaxCharge[weapon] * TankUpgrades_AddPerLevel[weapon];
 		TankUpgrades_Charge[weapon] = 0.0;
 		
 		switch(TankUpgrades_Level[weapon])
