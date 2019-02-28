@@ -6,11 +6,22 @@ even inventory application and medkit checks.
 
 Created by: Zethax
 Document created on: February 26th, 2019
-Last edit made on: February 26th, 2019
+Last edit made on: February 28th, 2019
 Current version: v1.0
 
 Attributes in this pack:
- None so far
+	- "backstab is infectious"
+		1) Duration of the infection
+		2) Radial infection radius
+		3) Whether or not the infection makes victims take minicrit damage
+		
+		On backstab, player will infect the victim and all nearby enemies with a deadly plague.
+		This plague will last for X seconds on the victim, and half that on nearby enemies.
+		Players will take damage per second based on max health and duration of the plague.
+		The plague can be shortened or removed by medics & dispensers, and removed by
+		stepping into a respawn room or picking up a medkit.
+		
+		Razorback snipers are infected for half the duration.
 
 */
 
@@ -240,6 +251,11 @@ void Infected_OnThink(client)
 		new damage = RoundFloat(GetClientMaxHealth(client) / (PoisonStab_Duration[client] / 2));
 		DealDamage(client, damage, InfectorID[client], DMG_POISON);
 		Infected_DmgDelay[client] = GetEngineTime();
+	}
+	if(GetEntProp(client, Prop_Send, "m_nNumHealers") > 0)
+	{
+		new healers = GetEntProp(client, Prop_Send, "m_nNumHealers");
+		Infected_Dur[client] -= 0.1 * healers;
 	}
 	if(GetEngineTime() >= Infected_Dur[client] + PoisonStab_Duration[client] || IsInSpawn[client])
 	{
