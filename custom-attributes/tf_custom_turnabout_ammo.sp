@@ -2,11 +2,14 @@
 
 Created by: Zethax
 Document created on: February 27th, 2019
-Last edit made on: February 27th, 2019
+Last edit made on: February 28th, 2019
 Current version: v0.0
 
 Attributes in this pack:
- None so far
+	- "turnabout ammo"
+		1) Maximum amount of ammo the weapon is allowed to accumulate
+		2) Amount of ammo gained on backstab
+		3) Amount of ammo gained upon successfully sapping a building
 
 */
 
