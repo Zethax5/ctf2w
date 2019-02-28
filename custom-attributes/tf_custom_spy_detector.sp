@@ -82,8 +82,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
-	
+	Detector[ent] = false;
+	Detector_Radius[ent] = 0.0;
+	Detector_Duration[ent] = 0.0;
+	Detector_DmgVuln[ent] = 0.0;
 }
