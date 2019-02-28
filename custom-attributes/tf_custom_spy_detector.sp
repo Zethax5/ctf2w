@@ -1,8 +1,8 @@
 /*
 
 Created by: Zethax
-Document created on: January 11th, 2019
-Last edit made on: January 11th, 2019
+Document created on: February 28th, 2019
+Last edit made on: February 28th, 2019
 Current version: v0.0
 
 Attributes in this pack:
@@ -78,6 +78,24 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	}
 	
 	return action;
+}
+
+public OnClientThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(Detector[weapon] && GetEngineTime() >= LastTick[client] + 0.1)
+		Detector_Think(client, weapon);
+}
+
+void Detector_Think(client, weapon)
+{
+	new metal;
 }
 
 public OnEntityDestroyed(ent)
