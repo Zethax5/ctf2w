@@ -120,6 +120,18 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 	}
 }
 
+public OnEntityCreated(ent, const String:cls[])
+{
+	if(ent < 0 || ent > 2048)
+		return;
+	
+	if(IsClassname(ent, "obj_sentrygun") || IsClassname(ent, "obj_dispenser") ||
+	IsClassname(ent, "obj_teleporter"))
+	{
+		
+	}
+}
+
 public OnEntityDestroyed(ent)
 {
     if(ent < 0 || ent > 2048)
