@@ -3,10 +3,12 @@
 Created by: Zethax
 Document created on: February 28th, 2019
 Last edit made on: February 28th, 2019
-Current version: v0.0
-
+Current version: v1.0
 Attributes in this pack:
- None so far
+	- "detection field while active"
+		1) Radius of detection field
+		2) Damage vulnerability multiplier
+		3) Duration of the detection after leaving the field
 
 */
 
@@ -22,7 +24,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_spy_detector"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute that can debuff enemies while active"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
