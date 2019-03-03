@@ -26,6 +26,7 @@ Attributes in this pack:
 #include <sdktools>
 #include <cw3-attributes>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "tf_custom_radial_ubercharge"
 #define PLUGIN_AUTH "Zethax"
@@ -88,6 +89,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		RadialUbercharge_Effect2[weapon] = StringToInt(values[2]);
 		RadialUbercharge_Effect3[weapon] = StringToInt(values[3]);
 		
+		TF2Attrib_SetByName(weapon, "medigun charge is crit boost", -1.0);
+		
 		RadialUbercharge[weapon] = true;
 		action = Plugin_Handled;
 	}
@@ -107,7 +110,7 @@ public void OnClientPreThink(client)
 	}
 	
 	new weapon = GetActiveWeapon(client);
-	if(weapon < 0 | weapon > 2048)
+	if(weapon < 0 || weapon > 2048)
 		return;
 	
 	if(!RadialUbercharge[weapon])
@@ -128,7 +131,8 @@ static void RadialUbercharge_PreThink(client, weapon)
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
 			TF2_AddCondition(patient, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
-			Boosted[i] = GetEngineTime();
+			TF2_AddCondition(patient, TFCond_SpeedBuffAlly, 0.001);
+			Boosted[patient] = GetEngineTime();
 		}
 		
 		new Float:Pos1[3];
@@ -146,6 +150,7 @@ static void RadialUbercharge_PreThink(client, weapon)
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect1[weapon], 0.33, client);
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect2[weapon], 0.33, client);
 					TF2_AddCondition(i, TFCond:RadialUbercharge_Effect3[weapon], 0.33, client);
+					TF2_AddCondition(i, TFCond_SpeedBuffAlly, 0.001);
 					Boosted[i] = GetEngineTime();
 				}
 			}

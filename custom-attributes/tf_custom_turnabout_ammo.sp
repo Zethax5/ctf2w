@@ -2,8 +2,8 @@
 
 Created by: Zethax
 Document created on: February 27th, 2019
-Last edit made on: February 28th, 2019
-Current version: v0.0
+Last edit made on: March 3rd, 2019
+Current version: v1.0
 
 Attributes in this pack:
 	- "turnabout ammo"
@@ -21,6 +21,7 @@ Attributes in this pack:
 #include <sdktools>
 #include <cw3-attributes>
 #include <zethax>
+#include <tf2attributes>
 
 #define PLUGIN_NAME "tf_custom_turnabout_ammo"
 #define PLUGIN_AUTH "Zethax"
@@ -50,6 +51,7 @@ public OnPluginStart() {
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
+	SDKHook(client, SDKHook_PostThink, OnClientPostThink);
 }
 
 new bool:TurnaboutAmmo[2049];
@@ -57,6 +59,8 @@ new TurnaboutAmmo_Max[2049];
 new TurnaboutAmmo_GainOnSap[2049];
 new TurnaboutAmmo_GainOnBackstab[2049];
 new TurnaboutAmmo_Ammo[2049];
+
+new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -79,6 +83,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		if(strlen(values[2]))
 			TurnaboutAmmo_GainOnSap[weapon] = StringToInt(values[2]);
 		
+		TF2Attrib_SetByName(weapon, "mod max primary clip override", -1.0);
+		TF2Attrib_SetByName(weapon, "hidden secondary max ammo penalty", 0.0);
+		SetClip_Weapon(weapon, TurnaboutAmmo_Max[weapon]);
+		SetAmmo_Weapon(weapon, TurnaboutAmmo_Max[weapon]);
+		
 		TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
 		TurnaboutAmmo[weapon] = true;
 		action = Plugin_Handled;
@@ -93,7 +102,8 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 		return Plugin_Continue;
 	
 	TurnaboutAmmo_Ammo[weapon]--;
-	SetEntProp(weapon, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[weapon]);
+	
+	return Plugin_Continue;
 }
 
 public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
@@ -109,15 +119,50 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 				if(TurnaboutAmmo_Ammo[primary] > TurnaboutAmmo_Max[primary])
 					TurnaboutAmmo_Ammo[primary] = TurnaboutAmmo_Max[primary];
 				
-				SetEntProp(primary, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[primary]);
+				SetClip_Weapon(primary, TurnaboutAmmo_Ammo[primary]);
+				SetAmmo_Weapon(primary, TurnaboutAmmo_Ammo[primary]);
 			}
 		}
 		if(TurnaboutAmmo[weapon])
 		{
 			TurnaboutAmmo_Ammo[weapon]++;
-			SetEntProp(weapon, Prop_Send, "m_iClip1", TurnaboutAmmo_Ammo[weapon]);
 		}
 	}
+}
+
+public OnTakeDamageBuilding(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
+{
+	if(attacker)
+	{
+		if(TurnaboutAmmo[weapon])
+		{
+			TurnaboutAmmo_Ammo[weapon]++;
+		}
+	}
+}
+
+public OnClientPostThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(!IsValidEdict(weapon))
+		return;
+	
+	if(!TurnaboutAmmo[weapon])
+		return;
+	
+	if(GetEngineTime() >= LastTick[client] + 0.1)
+		TurnaboutAmmo_PostThink(client, weapon);
+}
+
+void TurnaboutAmmo_PostThink(client, weapon)
+{
+	SetAmmo_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
+	SetClip_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
+	
+	LastTick[client] = GetEngineTime();
 }
 
 public OnEntityCreated(ent, const String:cls[])
@@ -128,8 +173,15 @@ public OnEntityCreated(ent, const String:cls[])
 	if(IsClassname(ent, "obj_sentrygun") || IsClassname(ent, "obj_dispenser") ||
 	IsClassname(ent, "obj_teleporter"))
 	{
-		
+		CreateTimer(0.3, OnBuildingSpawned, TIMER_FLAG_NO_MAPCHANGE, EntIndexToEntRef(ent));
 	}
+}
+
+public Action:OnBuildingSpawned(Handle:timer, any:ref)
+{
+	new ent = EntRefToEntIndex(ref);
+	SDKHook(ent, SDKHook_OnTakeDamagePost, OnTakeDamageBuilding);
+	return;
 }
 
 public OnEntityDestroyed(ent)

@@ -113,7 +113,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	if(attacker)
 	{
-		if(TankUpgrades[weapon])
+		if(weapon > -1 && TankUpgrades[weapon])
 		{
 			TankUpgrades_Charge[weapon] += damage * TankUpgrades_DealtChargeRate[weapon];
 			if(TankUpgrades_Charge[weapon] > TankUpgrades_MaxCharge[weapon])
@@ -172,6 +172,7 @@ static void TankUpgrades_PreThink(client, weapon)
 			case 3:
 			{
 				TF2Attrib_SetByName(weapon, "healing received bonus", 1.25);
+				TF2Attrib_SetByName(weapon, "heal on kill", 64.0);
 			}
 			case 4:
 			{
@@ -180,12 +181,11 @@ static void TankUpgrades_PreThink(client, weapon)
 			}
 			case 5:
 			{
-				TF2Attrib_SetByName(weapon, "attack projectiles", 1.0);
+				TF2Attrib_SetByName(weapon, "attack projectiles", 5.0);
 			}
 			case 6:
 			{
-				TF2Attrib_SetByName(weapon, "attack projectiles", 2.0);
-				TF2Attrib_SetByName(weapon, "generate rage on damage", 2.0);
+				TF2Attrib_SetByName(weapon, "generate rage on damage", 3.0);
 				TankUpgrades_Charge[weapon] = TankUpgrades_MaxCharge[weapon];
 			}
 		}

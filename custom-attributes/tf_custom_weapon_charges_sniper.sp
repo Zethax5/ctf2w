@@ -103,8 +103,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &bool:result)
 {
 	if (weapon == -1) return Plugin_Continue;
-	if (MinimumSniperCharge[weapon]) 
+	if (MinimumSniperCharge[weapon] > 0.0 && GetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage") > 0.0)
+	{
 		MinimumSniperCharge[weapon] -= ChargeDrain[weapon];
+		new melee = GetPlayerWeaponSlot(client, 2);
+		SetEntProp(melee, Prop_Send, "m_iClip1", RoundFloat(MinimumSniperCharge[weapon]));
+	}
 	
 	return Plugin_Continue;
 }
@@ -125,21 +129,20 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 {
 	if(attacker)
 	{
-		if(KillsChargeSniper[weapon])
+		if(weapon > -1 && KillsChargeSniper[weapon])
 		{
 			new primary = GetPlayerWeaponSlot(attacker, 0);
 			if(IsValidEdict(primary))
 				KillsChargeSniper_OnTakeDamage(primary, weapon);
-			
-			LastWeaponHurtWith[attacker] = weapon;
 		}
+		LastWeaponHurtWith[attacker] = weapon;
 	}
 }
 
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new weapon = LastWeaponHurtWith[attacker];
+	new weapon = GetActiveWeapon(attacker);
 	
 	if(attacker)
 	{
@@ -152,17 +155,15 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 	}
 }
 
-static void KillsChargeSniper_OnRunCmd(client, buttons, weapon)
+void KillsChargeSniper_OnRunCmd(client, buttons, weapon)
 {
-	new wep = GetPlayerWeaponSlot(client, 1);
-	if(!KillsChargeSniper[wep] || !IsValidEdict(wep))
-		wep = GetPlayerWeaponSlot(client, 2);
+	new wep = GetPlayerWeaponSlot(client, 2);
 	
 	if (MinimumSniperCharge[weapon])
 	{
 		new Float:chargeLevel = GetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage");
-		if (chargeLevel && chargeLevel < MinimumSniperCharge[weapon])
-			SetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage", MinimumSniperCharge[weapon]);
+		if (chargeLevel > 0.0 && chargeLevel < MinimumSniperCharge[weapon])
+			SetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage", MinimumSniperCharge[weapon] + 50.0);
 		
 		SetEntProp(wep, Prop_Send, "m_iClip1", RoundFloat(MinimumSniperCharge[weapon]));
 	}
@@ -184,7 +185,7 @@ static void KillsChargeSniper_OnRunCmd(client, buttons, weapon)
 	}
 }
 
-static void KillsChargeSniper_OnTakeDamage(primary, weapon)
+void KillsChargeSniper_OnTakeDamage(primary, weapon)
 {
 	new String:class[25];
 	GetEdictClassname(primary, class, sizeof(class));
@@ -203,6 +204,7 @@ static void KillsChargeSniper_OnTakeDamage(primary, weapon)
 		if(BowChargeRate[primary] > 0.9)
 			BowChargeRate[primary] = 0.9;
 		
+		ChargeDrain[primary] = KillsChargeSniper_Drain[weapon];
 		//Bows use charge rate rather than minimum charge
 		//So this must be applied to allow the bow to charge fast
 		TF2Attrib_SetByName(primary, "fire rate penalty HIDDEN", 1.0 - BowChargeRate[primary]);
@@ -211,7 +213,7 @@ static void KillsChargeSniper_OnTakeDamage(primary, weapon)
 	}
 }
 
-static void KillsChargeSniper_OnPlayerDeath(primary, weapon)
+void KillsChargeSniper_OnPlayerDeath(primary, weapon)
 {
 	new String:class[25];
 	GetEdictClassname(primary, class, sizeof(class));
@@ -230,6 +232,7 @@ static void KillsChargeSniper_OnPlayerDeath(primary, weapon)
 		if(BowChargeRate[primary] > 0.9)
 			BowChargeRate[primary] = 0.9;
 		
+		ChargeDrain[primary] = KillsChargeSniper_Drain[weapon];
 		//Bows use charge rate rather than minimum charge
 		//So this must be applied to allow the bow to charge fast
 		TF2Attrib_SetByName(primary, "fire rate penalty HIDDEN", 1.0 - BowChargeRate[primary]);

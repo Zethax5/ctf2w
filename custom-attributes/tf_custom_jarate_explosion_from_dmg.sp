@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: January 24th, 2019
 Last edit made on: January 24th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
  - "jarate explosion on dmg"
@@ -28,7 +28,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_jarate_explosion_from_dmg"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in an attribute associated with jarate explosions"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 #define PARTICLE_PISSBLAST "peejar_impact"
 #define SOUND_PISSBLAST "peejar_impact_cloud"
@@ -64,30 +64,28 @@ public OnClientPutInServer(client)
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
-new bool:JarateExplosion[2049];
-new Float:JarateExplosion_Radius[2049];
-new Float:JarateExplosion_Duration[2049];
-new Float:JarateExplosion_DmgThreshold[2049];
-new bool:JarateExplosion_Primed[2049];
+new bool:JarateExplosion[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:JarateExplosion_Radius[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:JarateExplosion_Duration[MAXPLAYERS + 1][MAXSLOTS + 1];
+new Float:JarateExplosion_DmgThreshold[MAXPLAYERS + 1][MAXSLOTS + 1];
+new bool:JarateExplosion_Primed[MAXPLAYERS + 1][MAXSLOTS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	if(!StrEqual(plugin, PLUGIN_NAME))
   		return Plugin_Continue;
 	
-	new weapon = GetPlayerWeaponSlot(client, slot);
-	
 	if(StrEqual(attrib, "jarate explosion on dmg"))
 	{
 		new String:values[3][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
-		JarateExplosion_Radius[weapon] = StringToFloat(values[0]);
-		JarateExplosion_Duration[weapon] = StringToFloat(values[1]);
-		JarateExplosion_DmgThreshold[weapon] = StringToFloat(values[2]);
+		JarateExplosion_Radius[client][slot] = StringToFloat(values[0]);
+		JarateExplosion_Duration[client][slot] = StringToFloat(values[1]);
+		JarateExplosion_DmgThreshold[client][slot] = StringToFloat(values[2]);
 		
-		JarateExplosion[weapon] = true;
-		JarateExplosion_Primed[weapon] = true;
+		JarateExplosion[client][slot] = true;
+		JarateExplosion_Primed[client][slot] = true;
 		return Plugin_Handled;
 	}
 	
@@ -98,28 +96,27 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	if(attacker && victim)
 	{
-		new secondary = GetPlayerWeaponSlot(victim, 1);
-		
-		if(JarateExplosion[secondary] && damage > JarateExplosion_DmgThreshold[secondary] && JarateExplosion_Primed[secondary])
+		new secondary = 1;
+		if(JarateExplosion[victim][secondary])
 		{
-			ApplyRadiusEffects(victim, _, _, JarateExplosion_Radius[secondary], TFCond_Jarated, _, JarateExplosion_Duration[secondary], _, 2, false);
-			SpawnParticle(victim, PARTICLE_PISSBLAST);
-			EmitSoundToAll(SOUND_PISSBLAST, victim);
-			JarateExplosion_Primed[secondary] = false;
+			if(damage > JarateExplosion_DmgThreshold[victim][secondary] && JarateExplosion_Primed[victim][secondary])
+			{
+				ApplyRadiusEffects(victim, _, _, JarateExplosion_Radius[victim][secondary], TFCond_Jarated, _, JarateExplosion_Duration[victim][secondary], _, 2, false);
+				SpawnParticle(victim, PARTICLE_PISSBLAST);
+				EmitSoundToAll(SOUND_PISSBLAST, victim);
+				JarateExplosion_Primed[victim][secondary] = false;
+			}
 		}
 	}
 	return Plugin_Continue;
 }
 
-public OnEntityDestroyed(ent)
+public CW3_OnWeaponRemoved(slot, client)
 {
-	if(ent < 0 || ent > 2048)
-		return;
-	
-	JarateExplosion[ent] = false;
-	JarateExplosion_Radius[ent] = 0.0;
-	JarateExplosion_Duration[ent] = 0.0;
-	JarateExplosion_DmgThreshold[ent] = 0.0;
-	JarateExplosion_Primed[ent] = false;
+	JarateExplosion[client][slot] = false;
+	JarateExplosion_Radius[client][slot] = 0.0;
+	JarateExplosion_Duration[client][slot] = 0.0;
+	JarateExplosion_DmgThreshold[client][slot] = 0.0;
+	JarateExplosion_Primed[client][slot] = false;
 }
 

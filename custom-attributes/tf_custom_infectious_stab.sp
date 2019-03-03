@@ -83,12 +83,13 @@ public OnMapStart()
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
-	SDKHook(client, SDKHook_Think, OnClientThink);
+	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 }
 
 new bool:PoisonStab[2049];
 new Float:PoisonStab_Duration[2049];
 new Float:PoisonStab_Radius[2049];
+new Float:PoisonStab_Dmg[2049];
 new bool:PoisonStab_MFD[2049];
 
 new bool:Infected[MAXPLAYERS + 1];
@@ -111,12 +112,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	if(StrEqual(attrib, "backstab is infectious"))
 	{
-		new String:values[3][10];
+		new String:values[4][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		PoisonStab_Duration[weapon] = StringToFloat(values[0]);
 		PoisonStab_Radius[weapon] = StringToFloat(values[1]);
-		if(strlen(values[2]) && StringToInt(values[2]) > 0)
+		PoisonStab_Dmg[weapon] = StringToFloat(values[2]);
+		if(strlen(values[3]) && StringToInt(values[3]) > 0)
 			PoisonStab_MFD[weapon] = true;
 		
 		PoisonStab[weapon] = true;
@@ -130,7 +132,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 {
 	if(attacker)
 	{
-		if(PoisonStab[weapon] && damageCustom == TF_CUSTOM_BACKSTAB)
+		if(weapon > -1 && PoisonStab[weapon] && damageCustom == TF_CUSTOM_BACKSTAB)
 		{
 			PoisonStab_OnTakeDamage(attacker, victim, weapon);
 			
@@ -146,17 +148,12 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 //so infection doesn't carry over if they die
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	if(victim)
+	new Victim = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(Victim)
 	{
-		if(Infected[victim])
+		if(Infected[Victim])
 		{
-			Infected[victim] = false;
-			InfectorID[victim] = -1;
-			Infected_Dur[victim] = 0.0;
-			Infected_DmgDelay[victim] = 0.0;
-			PoisonStab_Duration[victim] = 0.0;
-			StopSound(victim, SNDCHAN_AUTO, SOUND_PLAGUE_LOOP);
+			RemoveInfection(Victim);
 		}
 	}
 }
@@ -165,13 +162,7 @@ public OnTouchHealthKit(const String:output[], caller, client, Float:delay)
 {
 	if(Infected[client])
 	{
-		Infected[client] = false;
-		InfectorID[client] = -1;
-		Infected_Dur[client] = 0.0;
-		Infected_DmgDelay[client] = 0.0;
-		PoisonStab_Duration[client] = 0.0;
-		TF2_RemoveCondition(client, TFCond_MarkedForDeath);
-		StopSound(client, SNDCHAN_AUTO, SOUND_PLAGUE_LOOP);
+		RemoveInfection(client);
 	}
 }
 
@@ -190,14 +181,13 @@ public SpawnEndTouch(spawn, client)
 	IsInSpawn[client] = false;
 }
 
-public OnClientThink(client)
+public OnClientPreThink(client)
 {
 	if(!IsValidClient(client))
 		return;
 	
 	if(Infected[client] && GetEngineTime() >= LastTick[client] + 0.1)
 		Infected_OnThink(client);
-	
 }
 
 void PoisonStab_OnTakeDamage(attacker, victim, weapon)
@@ -208,6 +198,7 @@ void PoisonStab_OnTakeDamage(attacker, victim, weapon)
 	InfectorID[victim] = attacker;
 	Infected_Dur[victim] = GetEngineTime();
 	PoisonStab_Duration[victim] = PoisonStab_Duration[weapon];
+	PoisonStab_Dmg[victim] = PoisonStab_Dmg[weapon];
 	if(PoisonStab_MFD[weapon])
 		TF2_AddCondition(victim, TFCond_MarkedForDeath, PoisonStab_Duration[weapon]);
 	
@@ -227,16 +218,16 @@ void PoisonStab_OnTakeDamage(attacker, victim, weapon)
 		if(IsValidClient(target) && IsPlayerAlive(target) && GetClientTeam(target) != GetClientTeam(attacker) && target != victim)
 		{
 			GetClientAbsOrigin(target, targetPos);
-			if(GetVectorDistance(attackerPos, targetPos) >= PoisonStab_Radius[weapon])
+			if(GetVectorDistance(attackerPos, targetPos) <= PoisonStab_Radius[weapon])
 			{
 				Infected[target] = true;
 				InfectorID[target] = attacker;
 				Infected_Dur[target] = GetEngineTime();
 				PoisonStab_Duration[target] = PoisonStab_Duration[weapon] / 2;
+				PoisonStab_Dmg[target] = PoisonStab_Dmg[weapon];
 				if(PoisonStab_MFD[weapon])
 					TF2_AddCondition(target, TFCond_MarkedForDeath, PoisonStab_Duration[weapon] / 2);
 				
-				EmitSoundToClient(attacker, SOUND_PLAGUE_INFECTED);
 				EmitSoundToClient(target, SOUND_PLAGUE_INFECTED);
 				EmitSoundToClient(target, SOUND_PLAGUE_LOOP);
 			}
@@ -244,12 +235,17 @@ void PoisonStab_OnTakeDamage(attacker, victim, weapon)
 	}
 }
 
-void Infected_OnThink(client)
+static void Infected_OnThink(client)
 {
-	if(Infected[client] && GetEngineTime() >= Infected_DmgDelay[client] + 0.5)
+	if(GetEngineTime() >= Infected_DmgDelay[client] + 0.5)
 	{
-		new damage = RoundFloat(GetClientMaxHealth(client) / (PoisonStab_Duration[client] / 2));
-		DealDamage(client, damage, InfectorID[client], DMG_POISON);
+		new infector = InfectorID[client];
+		if(!IsValidClient(infector))
+			return;
+		
+		new damage = RoundFloat(GetClientMaxHealth(client) * PoisonStab_Dmg[client]);
+		DealDamage(client, damage, infector, DMG_POISON);
+		
 		Infected_DmgDelay[client] = GetEngineTime();
 	}
 	if(GetEntProp(client, Prop_Send, "m_nNumHealers") > 0)
@@ -259,15 +255,22 @@ void Infected_OnThink(client)
 	}
 	if(GetEngineTime() >= Infected_Dur[client] + PoisonStab_Duration[client] || IsInSpawn[client])
 	{
-		Infected[client] = false;
-		Infected_Dur[client] = 0.0;
-		PoisonStab_Duration[client] = 0.0;
-		InfectorID[client] = -1;
-		TF2_RemoveCondition(client, TFCond_MarkedForDeath);
-		StopSound(client, SNDCHAN_AUTO, SOUND_PLAGUE_LOOP);
+		RemoveInfection(client);
 	}
 	
 	LastTick[client] = GetEngineTime();
+}
+
+void RemoveInfection(client)
+{
+	Infected[client] = false;
+	InfectorID[client] = -1;
+	Infected_Dur[client] = 0.0;
+	Infected_DmgDelay[client] = 0.0;
+	PoisonStab_Duration[client] = 0.0;
+	PoisonStab_Dmg[client] = 0.0;
+	TF2_RemoveCondition(client, TFCond_MarkedForDeath);
+	StopSound(client, SNDCHAN_AUTO, SOUND_PLAGUE_LOOP);
 }
 
 public OnEntityDestroyed(ent)
@@ -278,5 +281,6 @@ public OnEntityDestroyed(ent)
 	PoisonStab[ent] = false;
 	PoisonStab_Duration[ent] = 0.0;
 	PoisonStab_Radius[ent] = 0.0;
+	PoisonStab_Dmg[ent] = 0.0;
 	PoisonStab_MFD[ent] = false;
 }

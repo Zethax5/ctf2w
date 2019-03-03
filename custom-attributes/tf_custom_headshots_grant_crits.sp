@@ -2,8 +2,8 @@
 
 Created by: Zethax
 Document created on: February 20th, 2019
-Last edit made on: February 21st, 2019
-Current version: v0.0
+Last edit made on: March 2nd, 2019
+Current version: v1.0
 
 Attributes in this pack:
 	- "headshots store crits"
@@ -28,7 +28,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_headshots_grant_crits"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute that allows headshots to accumulate crits on any other weapon"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
@@ -59,9 +59,9 @@ public OnClientPutInServer(client)
 new bool:StoreCritOnHeadshot[2049];
 new StoreCritOnHeadshot_Max[2049];
 new StoreCritOnHeadshot_Crits[2049];
-new bool:StoreCritOnHeadshot_KillRequired[2049];
-new bool:StoreCritOnHeadshot_UseOnMiss[2049];
-new bool:StoreCritOnHeadshot_IsMinicrits[2049];
+new StoreCritOnHeadshot_KillRequired[2049];
+new StoreCritOnHeadshot_UseOnMiss[2049];
+new StoreCritOnHeadshot_IsMinicrits[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -81,12 +81,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		StoreCritOnHeadshot_Max[weapon] = StringToInt(values[0]);
-		if(strlen(values[1]) && StringToInt(values[1]) > 0)
-			StoreCritOnHeadshot_KillRequired[weapon] = true;
-		if(strlen(values[2]) && StringToInt(values[2]) > 0)
-			StoreCritOnHeadshot_UseOnMiss[weapon] = true;
-		if(strlen(values[3]) && StringToInt(values[3]) > 0)
-			StoreCritOnHeadshot_IsMinicrits[weapon] = true;
+		if(strlen(values[1]))
+			StoreCritOnHeadshot_KillRequired[weapon] = StringToInt(values[1]);
+		if(strlen(values[2]))
+			StoreCritOnHeadshot_UseOnMiss[weapon] = StringToInt(values[2]);
+		if(strlen(values[3]))
+			StoreCritOnHeadshot_IsMinicrits[weapon] = StringToInt(values[3]);
 		
 		//Initializes ammo counter
 		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
@@ -104,11 +104,11 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	if(!StoreCritOnHeadshot[weapon])
 		return Plugin_Continue;
 		
-	if(!StoreCritOnHeadshot_UseOnMiss[weapon])
-		return Plugin_Continue;
-	
-	if(StoreCritOnHeadshot_Crits[weapon] > 0)
-		StoreCritOnHeadshot_Crits[weapon]--;
+	if(StoreCritOnHeadshot_UseOnMiss[weapon])
+	{
+		if(StoreCritOnHeadshot_Crits[weapon] > 0)
+			StoreCritOnHeadshot_Crits[weapon]--;
+	}
 		
 	return Plugin_Continue;
 }
@@ -118,17 +118,20 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	if(attacker && victim)
 	{
 		new wep = GetPlayerWeaponSlot(attacker, 1);
-		if(wep < 0)
+		if(wep < 0 || !StoreCritOnHeadshot[wep])
 			wep = GetPlayerWeaponSlot(attacker, 2);
 		if(StoreCritOnHeadshot[wep])
 		{
 			if(damageCustom == TF_CUSTOM_HEADSHOT)
 			{
-				if(StoreCritOnHeadshot_KillRequired[wep] && damage >= GetClientHealth(victim))
+				if(StoreCritOnHeadshot_KillRequired[wep])
 				{
-					StoreCritOnHeadshot_Crits[wep]++;
-					if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
-						StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
+					if(damage >= GetClientHealth(victim))
+					{
+						StoreCritOnHeadshot_Crits[wep]++;
+						if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
+							StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
+					}
 				}
 				else
 				{
@@ -138,9 +141,9 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				}
 			}
 		}
-		if(StoreCritOnHeadshot[weapon] && !StoreCritOnHeadshot_UseOnMiss[weapon])
+		if(weapon > -1 && StoreCritOnHeadshot[weapon] && !StoreCritOnHeadshot_UseOnMiss[weapon])
 		{
-			StoreCritOnHeadshot[weapon]--;
+			StoreCritOnHeadshot_Crits[weapon]--;
 			if(StoreCritOnHeadshot_Crits[weapon] < 0)
 				StoreCritOnHeadshot_Crits[weapon] = 0;
 		}
@@ -170,7 +173,12 @@ public OnClientPreThink(client)
 static void StoreCritOnHeadshot_PreThink(client, weapon)
 {
 	if(StoreCritOnHeadshot_Crits[weapon] > 0)
-		TF2_AddCondition(client, TFCond_CritCanteen, 0.2);
+	{
+		if(StoreCritOnHeadshot_IsMinicrits[weapon])
+			TF2_AddCondition(client, TFCond:78, 0.2);
+		else
+			TF2_AddCondition(client, TFCond_CritCanteen, 0.2);
+	}
 	
 	//Sets ammo display to show stacks
 	SetEntProp(weapon, Prop_Send, "m_iClip1", StoreCritOnHeadshot_Crits[weapon]);
@@ -181,10 +189,10 @@ public OnEntityDestroyed(ent)
     if(ent < 0 || ent > 2048)
         return;
 	
-	StoreCritOnHeadshot[ent]				 = false;
-	StoreCritOnHeadshot_Max[ent] 		 = 0;
-	StoreCritOnHeadshot_Crits[ent]		 = 0;
-	StoreCritOnHeadshot_KillRequired[ent] = false;
-	StoreCritOnHeadshot_IsMinicrits[ent]  = false;
-	StoreCritOnHeadshot_UseOnMiss[ent] 	 = false;
+	StoreCritOnHeadshot[ent]			  = false;
+	StoreCritOnHeadshot_Max[ent] 		  = 0;
+	StoreCritOnHeadshot_Crits[ent]		  = 0;
+	StoreCritOnHeadshot_KillRequired[ent] = 0;
+	StoreCritOnHeadshot_IsMinicrits[ent]  = 0;
+	StoreCritOnHeadshot_UseOnMiss[ent] 	  = 0;
 }

@@ -69,7 +69,7 @@ public OnMapStart()
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_Think, OnClientThink);
+	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 }
 
 new bool:StackSpeedOnKill[2049];
@@ -134,7 +134,7 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 			TF2Attrib_SetByName(weapon, "damage penalty", penalty);
 			
 			if(StackSpeedOnKill_Stacks[weapon] >= StackSpeedOnKill_MaxStacks[weapon] / 2 && 
-				StackSpeedOnKill_Particle[attacker] == -1)
+				StackSpeedOnKill_Particle[attacker] == 0)
 			{
 				new Float:pos[3];
 				pos[2] += 100.0;
@@ -167,54 +167,55 @@ public Action:OnPostInventoryApplication(Handle:event, const String:name[], bool
 	
 	if(IsValidClient(client))
 	{
-		if(StackSpeedOnKill_Particle[client] > -1)
+		if(StackSpeedOnKill_Particle[client])
 		{
 			CreateTimer(0.0, RemoveParticle, StackSpeedOnKill_Particle[client]);
-			StackSpeedOnKill_Particle[client] = -1;
+			StackSpeedOnKill_Particle[client] = 0;
 		}
 	}
 }
 
-public OnClientThink(client)
+public OnClientPreThink(client)
 {
 	if(!IsValidClient(client))
 		return;
 	
-	new weapon = GetPlayerWeaponSlot(client, 1);
-	if(weapon < 0 || weapon > 2048)
+	new weapon = GetActiveWeapon(client);
+	if(weapon == -1)
 		return;
 	
-	if(!StackSpeedOnKill[weapon])
-		return;
-	
-	if(GetEngineTime() > LastTick[client] + 0.1)
-		StackSpeedOnKill_Think(client, weapon);
+	if(GetEngineTime() >= LastTick[client] + 0.1)
+		StackSpeedOnKill_PreThink(client, weapon);
 }
 
-static void StackSpeedOnKill_Think(client, weapon)
+void StackSpeedOnKill_PreThink(client, weapon)
 {
+	new secondary = GetPlayerWeaponSlot(client, 1);
+	if(secondary < 0 || !StackSpeedOnKill[secondary])
+		return;
+	
 	if(TF2_IsPlayerInCondition(client, TFCond:0) && !SpunUp[client])
 	{
-		TF2Attrib_RemoveByName(weapon, "move speed bonus");
+		TF2Attrib_RemoveByName(secondary, "move speed bonus");
 		TF2_AddCondition(client, TFCond_SpeedBuffAlly, 0.01);
 		
-		if(StackSpeedOnKill_Particle[client] > -1)
+		if(StackSpeedOnKill_Particle[client])
 		{
 			CreateTimer(0.0, RemoveParticle, StackSpeedOnKill_Particle[client]);
-			StackSpeedOnKill_Particle[client] = -1;
+			StackSpeedOnKill_Particle[client] = 0;
 		}
 		
 		SpunUp[client] = true;
 	}
 	else if(!TF2_IsPlayerInCondition(client, TFCond:0) && SpunUp[client])
 	{
-		new Float:speed = 1.0 + (StackSpeedOnKill_MoveSpd[weapon] * StackSpeedOnKill_Stacks[weapon]);
+		new Float:speed = 1.0 + (StackSpeedOnKill_MoveSpd[secondary] * StackSpeedOnKill_Stacks[secondary]);
 		
-		TF2Attrib_SetByName(weapon, "move speed bonus", speed);
+		TF2Attrib_SetByName(secondary, "move speed bonus", speed);
 		TF2_AddCondition(client, TFCond_SpeedBuffAlly, 0.01);
 		
-		if(StackSpeedOnKill_Stacks[weapon] == StackSpeedOnKill_MaxStacks[weapon] / 2 && 
-			StackSpeedOnKill_Particle[client] == -1)
+		if(StackSpeedOnKill_Stacks[secondary] >= StackSpeedOnKill_MaxStacks[secondary] / 2 && 
+			StackSpeedOnKill_Particle[client] == 0)
 		{
 			new Float:pos[3];
 			pos[2] += 100.0;
@@ -223,8 +224,11 @@ static void StackSpeedOnKill_Think(client, weapon)
 		SpunUp[client] = false;
 	}
 	
-	SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
-	ShowSyncHudText(client, hudText_Client, "Stacks: %i / %i", StackSpeedOnKill_Stacks[weapon], StackSpeedOnKill_MaxStacks[weapon]);
+	if(StackSpeedOnKill[weapon])
+	{
+		SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
+		ShowSyncHudText(client, hudText_Client, "Stacks: %i / %i", StackSpeedOnKill_Stacks[weapon], StackSpeedOnKill_MaxStacks[weapon]);
+	}
 	
 	LastTick[client] = GetEngineTime();
 }

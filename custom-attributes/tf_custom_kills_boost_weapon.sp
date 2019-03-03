@@ -35,11 +35,11 @@ new Handle:hudText_Client;
 
 public Plugin:my_info = {
 	
-	name				= PLUGIN_NAME,
-	author			= PLUGIN_AUTH,
+	name		= PLUGIN_NAME,
+	author		= PLUGIN_AUTH,
 	description = PLUGIN_DESC,
-	version		 = PLUGIN_VERS,
-	url				 = ""
+	version		= PLUGIN_VERS,
+	url			= ""
 };
 
 public OnPluginStart() {
@@ -71,6 +71,7 @@ new Float:KillsBoost_GainOnMeleeKill[2049];
 new KillsBoost_Condition[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
+new Float:SpinTime[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -87,11 +88,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		new String:values[4][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
-		KillsBoost_MaxDur[weapon]					= StringToFloat(values[0]);
-		KillsBoost_GainOnKill[weapon]			= StringToFloat(values[1]);
+		KillsBoost_MaxDur[weapon]		   = StringToFloat(values[0]);
+		KillsBoost_GainOnKill[weapon]	   = StringToFloat(values[1]);
 		KillsBoost_GainOnMeleeKill[weapon] = StringToFloat(values[2]);
-		KillsBoost_Condition[weapon]			 = StringToInt(values[3]);
-		
+		KillsBoost_Condition[weapon]	   = StringToInt(values[3]);
+	
 		KillsBoost[weapon] = true;
 		action = Plugin_Handled;
 	}
@@ -133,19 +134,19 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 	}
 	if(assister)
 	{
-	new weapon = LastWeaponHurtWith[assister];
-	new primary = GetPlayerWeaponSlot(assister, 0);
+		new weapon = LastWeaponHurtWith[assister];
+		new primary = GetPlayerWeaponSlot(assister, 0);
 		if(primary > 0 && primary < 2049 && KillsBoost[primary])
 		{
 			if(weapon == GetPlayerWeaponSlot(assister, 1))
 			{
-				KillsBoost_StoredDur[primary] += KillsBoost_GainOnKill[primary];
+				KillsBoost_StoredDur[primary] += KillsBoost_GainOnKill[primary] / 2;
 				if(KillsBoost_StoredDur[primary] > KillsBoost_MaxDur[primary])
 					KillsBoost_StoredDur[primary] = KillsBoost_MaxDur[primary];
 			}
 			else if(weapon == GetPlayerWeaponSlot(assister, 2))
 			{
-				KillsBoost_StoredDur[primary] += KillsBoost_GainOnMeleeKill[primary];
+				KillsBoost_StoredDur[primary] += KillsBoost_GainOnMeleeKill[primary] / 2;
 				if(KillsBoost_StoredDur[primary] > KillsBoost_MaxDur[primary])
 					KillsBoost_StoredDur[primary] = KillsBoost_MaxDur[primary];
 			}
@@ -171,14 +172,20 @@ public OnClientPreThink(client)
 
 static void KillsBoost_PreThink(client, weapon)
 {
-	if(TF2_IsPlayerInCondition(client, TFCond:0) && KillsBoost_StoredDur[weapon] > 0.0)
+	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
-		TF2_AddCondition(client, TFCond:KillsBoost_Condition[weapon], 0.2);
-		KillsBoost_StoredDur[weapon] -= 0.1;
+		SpinTime[client] += 0.1;
+		if(SpinTime[client] >= 1.0 && KillsBoost_StoredDur[weapon] > 0.0)
+		{
+			TF2_AddCondition(client, TFCond:KillsBoost_Condition[weapon], 0.2);
+			KillsBoost_StoredDur[weapon] -= 0.1;
+		}
 	}
+	else
+		SpinTime[client] = 0.0;
 	
 	SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
-	ShowSyncHudText(client, hudText_Client, "Boost: %i / %i", RoundFloat(KillsBoost_StoredDur[weapon]), RoundFloat(KillsBoost_MaxDur[weapon]));
+	ShowSyncHudText(client, hudText_Client, "Boost: %is / %is", RoundFloat(KillsBoost_StoredDur[weapon]), RoundFloat(KillsBoost_MaxDur[weapon]));
 	
 	LastTick[client] = GetEngineTime();
 }

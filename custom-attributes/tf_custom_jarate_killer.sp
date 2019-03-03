@@ -42,54 +42,52 @@ public Plugin:my_info = {
 public OnPluginStart() {
  
 	HookEvent("player_death", OnPlayerDeath);
-	
+	HookEvent("post_inventory_application", OnInventoryApplication);
 }
 
 public OnMapStart() {
 
-	for(new i = 0; i <= sizeof(ScoutDominations[]); i++)
+	for(new i = 0; i <= 4; i++)
 		PrecacheSound(ScoutDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(SoldierDominations[]); i++)
+	for(new i = 0; i <= 5; i++)
 		PrecacheSound(SoldierDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(PyroDominations[]); i++)
+	for(new i = 0; i <= 4; i++)
 		PrecacheSound(PyroDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(DemoDominations[]); i++)
+	for(new i = 0; i <= 5; i++)
 		PrecacheSound(DemoDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(HeavyDominations[]); i++)
+	for(new i = 0; i <= 6; i++)
 		PrecacheSound(HeavyDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(EngiDominations[]); i++)
+	for(new i = 0; i <= 5; i++)
 		PrecacheSound(EngiDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(MedicDominations[]); i++)
+	for(new i = 0; i <= 4; i++)
 		PrecacheSound(MedicDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(SniperDominations[]); i++)
+	for(new i = 0; i <= 4; i++)
 		PrecacheSound(SniperDominations[i], true);
 	
-	for(new i = 0; i <= sizeof(SpyDominations[]); i++)
+	for(new i = 0; i <= 6; i++)
 		PrecacheSound(SpyDominations[i], true);
 }
 
-new bool:JarateKiller[2049];
-new Float:JarateKiller_Duration[2049];
+new bool:JarateKiller[MAXPLAYERS + 1];
+new Float:JarateKiller_Duration[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
 	if(!StrEqual(plugin, PLUGIN_NAME))
   		return Plugin_Continue;
-		
-	new weapon = GetPlayerWeaponSlot(client, slot);
 	
 	if(StrEqual(attrib, "jarate killer"))
 	{
-		JarateKiller_Duration[weapon] = StringToFloat(value);
+		JarateKiller_Duration[client] = StringToFloat(value);
 		
-		JarateKiller[weapon] = true;
+		JarateKiller[client] = true;
 		return Plugin_Handled;
 	}
 	
@@ -101,68 +99,70 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 	new Victim = GetClientOfUserId(GetEventInt(event, "userid"));
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	
-	if(attacker && Victim)
+	if(JarateKiller[Victim])
 	{
-		new secondary = GetPlayerWeaponSlot(Victim, 1);
-		if(JarateKiller[secondary])
+		TF2_AddCondition(attacker, TFCond_Jarated, JarateKiller_Duration[Victim], Victim);
+		
+		new TFClassType:class = TF2_GetPlayerClass(attacker);
+		new voiceline;
+		if(class == TFClass_Scout)
 		{
-			TF2_AddCondition(attacker, TFCond_Jarated, JarateKiller_Duration[secondary], Victim);
-			new TFClassType:class = TF2_GetPlayerClass(attacker);
-			new voiceline;
-			if(class == TFClass_Scout)
-			{
-				voiceline = GetRandomInt(0, 4);
-				EmitSoundToClient(attacker, ScoutDominations[voiceline]);
-			}
-			else if(class == TFClass_Soldier)
-			{
-				voiceline = GetRandomInt(0, 5);
-				EmitSoundToClient(attacker, SoldierDominations[voiceline]);
-			}
-			else if(class == TFClass_Pyro)
-			{
-				voiceline = GetRandomInt(0, 4);
-				EmitSoundToClient(attacker, PyroDominations[voiceline]);
-			}
-			else if(class == TFClass_DemoMan)
-			{
-				voiceline = GetRandomInt(0, 5);
-				EmitSoundToClient(attacker, DemoDominations[voiceline]);
-			}
-			else if(class == TFClass_Heavy)
-			{
-				voiceline = GetRandomInt(0, 6);
-				EmitSoundToClient(attacker, HeavyDominations[voiceline]);
-			}
-			else if(class == TFClass_Engineer)
-			{
-				voiceline = GetRandomInt(0, 5);
-				EmitSoundToClient(attacker, EngiDominations[voiceline]);
-			}
-			else if(class == TFClass_Medic)
-			{
-				voiceline = GetRandomInt(0, 4);
-				EmitSoundToClient(attacker, MedicDominations[voiceline]);
-			}
-			else if(class == TFClass_Sniper)
-			{
-				voiceline = GetRandomInt(0, 4);
-				EmitSoundToClient(attacker, SniperDominations[voiceline]);
-			}
-			else if(class == TFClass_Spy)
-			{
-				voiceline = GetRandomInt(0, 6);
-				EmitSoundToClient(attacker, SpyDominations[voiceline]);
-			}
+			voiceline = GetRandomInt(0, 4);
+			EmitSoundToClient(attacker, ScoutDominations[voiceline]);
 		}
+		else if(class == TFClass_Soldier)
+		{
+			voiceline = GetRandomInt(0, 5);
+			EmitSoundToClient(attacker, SoldierDominations[voiceline]);
+		}
+		else if(class == TFClass_Pyro)
+		{
+			voiceline = GetRandomInt(0, 4);
+			EmitSoundToClient(attacker, PyroDominations[voiceline]);
+		}
+		else if(class == TFClass_DemoMan)
+		{
+			voiceline = GetRandomInt(0, 5);
+			EmitSoundToClient(attacker, DemoDominations[voiceline]);
+		}
+		else if(class == TFClass_Heavy)
+		{
+			voiceline = GetRandomInt(0, 6);
+			EmitSoundToClient(attacker, HeavyDominations[voiceline]);
+		}
+		else if(class == TFClass_Engineer)
+		{
+			voiceline = GetRandomInt(0, 5);
+			EmitSoundToClient(attacker, EngiDominations[voiceline]);
+		}
+		else if(class == TFClass_Medic)
+		{
+			voiceline = GetRandomInt(0, 4);
+			EmitSoundToClient(attacker, MedicDominations[voiceline]);
+		}
+		else if(class == TFClass_Sniper)
+		{
+			voiceline = GetRandomInt(0, 4);
+			EmitSoundToClient(attacker, SniperDominations[voiceline]);
+		}
+		else if(class == TFClass_Spy)
+		{
+			voiceline = GetRandomInt(0, 6);
+			EmitSoundToClient(attacker, SpyDominations[voiceline]);
+		}
+		
+		JarateKiller[Victim] = false;
+		JarateKiller_Duration[Victim] = 0.0;
 	}
 }
 
-public OnEntityDestroyed(ent)
+public Action:OnInventoryApplication(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(ent < 0 || ent > 2048)
-		return;
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	
-	JarateKiller[ent] = false;
-	JarateKiller_Duration[ent] = 0.0;
+	if(IsValidClient(client))
+	{
+		JarateKiller[client] = false;
+		JarateKiller_Duration[client] = 0.0;
+	}
 }

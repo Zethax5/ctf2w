@@ -59,7 +59,7 @@ public Plugin:my_info = {
 	description = PLUGIN_DESC,
 	author	    = PLUGIN_AUTH,
 	version	    = PLUGIN_VERS,
-	url	    = ""
+	url	    	= ""
 };
 
 //These attributes were seen before, but were terribly made
@@ -244,25 +244,25 @@ static void DispenserMinigun_PostThink(client, weapon)
 							SpawnParticle(i, "healthgained_blu", position);
 					}
 					
-					//Function that actually heals the player, because Sourcemod and TF2
-					//don't provide such a library on their own
 					if(DispenserMinigun_Heal[weapon])
 					{
 						if(TF2_GetPlayerClass(i) != TFClass_Heavy)
 							HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
-						else if(TF2_GetPlayerClass(i) == TFClass_Heavy && i != client && ReduceHealingSpinning[GetActiveWeapon(i)] && TF2_IsPlayerInCondition(i, TFCond:0))
-							HealPlayer(client, i, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[GetActiveWeapon(i)])), _);
+						else if(TF2_GetPlayerClass(i) == TFClass_Heavy)
+						{
+							//Should the player have reduced healing while spun up
+							if(i != client && ReduceHealingSpinning[GetActiveWeapon(i)] && TF2_IsPlayerInCondition(i, TFCond:0))
+								HealPlayer(client, i, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[GetActiveWeapon(i)])), _); //reduced healing
+							else
+								HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _); //defaults to regular healing amount
+						}
 					}
 					//Emits healing sound to players that step into the radius
 					if(!DispenserMinigun_InRadius[i])
 					{
-						if(!DispenserMinigun_InFury[weapon])
-							EmitSoundToAll(SOUND_DISPENSE, client);
-						else
-						{
-							EmitSoundToAll(SOUND_DISPENSE, client, _, _, _, _, 120);
-						}
 						DispenserMinigun_InRadius[i] = true;
+						if(i == client)
+							EmitSoundToAll(SOUND_DISPENSE, client);
 					}
 					if(DispenserMinigun_InFury[weapon])
 						TF2_AddCondition(i, TFCond:20, 0.6, client);
@@ -270,16 +270,18 @@ static void DispenserMinigun_PostThink(client, weapon)
 					//If the weapon is also set to dispense ammo, this executes
 					if(DispenserMinigun_Ammo[weapon])
 					{
-						for(new j = 0; j <= 3 ; j++)
+						for(new j = 0; j <= 4 ; j++)
 						{
 							new wep = GetPlayerWeaponSlot(i, j);
 							if(wep == -1) continue;
-							new ammotype = GetEntProp(wep, Prop_Data, "m_iPrimaryAmmoType");
-							new ammo = RoundFloat(MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon]);
+							new ammo = GetAmmo_Weapon(wep);
+							ammo += MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon];
+							if(ammo > MaxAmmo[wep])
+								ammo = MaxAmmo[wep];
 							
 							//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
 							
-							GivePlayerAmmo(i, ammo, ammotype, false);
+							SetAmmo_Weapon(wep, ammo);
 							//PrintToChat(client, "ammo dispensed");
 						}
 					}
@@ -295,17 +297,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 		if(DispenserMinigun_InRadius[client])
 		{
 			DispenserMinigun_InRadius[client] = false;
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
 			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
 		}
 		
@@ -334,17 +325,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
 			
 			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
 			DispenserMinigun_InRadius[client] = false;
 		}
 	}
@@ -354,17 +334,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
 							//Allows him to gain rage again
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
 		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
 		DispenserMinigun_InRadius[client] = false;
 	}

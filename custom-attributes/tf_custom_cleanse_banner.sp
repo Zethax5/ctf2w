@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: Thursday, December 20th, 2018
-Last edit made on: Friday, February 22nd, 2019
+Last edit made on: Saturday, March 2nd, 2019
 Current version: v0.9
 
 Attributes in this pack:
@@ -55,7 +55,7 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client) {
   
-  SDKHook(client, SDKHook_PostThink, OnClientPostThink);
+  SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 }
 
 //Used to track whether or not a player has deployed a custom buff banner
@@ -67,7 +67,8 @@ new CleanseBanner_Healing[2049];
 new CleanseBanner_NumPlayers[2049];
 new bool:CleanseBanner_ToHeal[MAXPLAYERS + 1];
 new CleanseBanner_Healer[MAXPLAYERS + 1];
-new Float:CleanseBanner_Delay[2049];
+
+new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -99,7 +100,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
   return action;
 }
 
-public OnClientPostThink(client)
+public OnClientPreThink(client)
 {	
 	if(!IsValidClient(client))
 		return;
@@ -110,24 +111,21 @@ public OnClientPostThink(client)
 	//Because of the way custom buff banners work, this needs to be put in place
 	//The system only applies the effects 5 times per second
 	//This is to keep the system from getting overloaded
-	if(CleanseBanner_Delay[client] > GetEngineTime() + 0.2)
-		CleanseBanner_PostThink(client);
+	if(GetEngineTime() >= LastTick[client] + 0.2)
+	{
+		CleanseBanner_PreThink(client);
+		LastTick[client] = GetEngineTime();
+	}
 }
 
 public void OnDeployBuffBanner(Handle:event, const String:strname[], bool:dontBroadcast)
 {
-  new client = GetClientOfUserId(GetEventInt(event, "buff_owner"));
-  if(IsValidClient(client))
-  {
-    BuffDeployed[client] = true;
-  }
+   new client = GetClientOfUserId(GetEventInt(event, "buff_owner"));
+   BuffDeployed[client] = true;
 }
 
-static void CleanseBanner_PostThink(client)
+void CleanseBanner_PreThink(client)
 {
-	if(!IsValidClient(client))
-		return;
-		
 	//Due to the way the healing works this is how it's done
 	//System tallies up all players in the radius and marks the to be healed
 	//Later, the system will apply the healing after all the players have been tallied up
@@ -136,24 +134,21 @@ static void CleanseBanner_PostThink(client)
 		new healer = CleanseBanner_Healer[client];
 		if(IsValidClient(healer))
 		{
-			banner = GetPlayerWeaponSlot(healer, 1);
+			new banner = GetPlayerWeaponSlot(healer, 1);
 			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
 			{
-				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner], _);
+				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner] / 5, 1.0);
 				CleanseBanner_ToHeal[client] = false;
 				CleanseBanner_Healer[client] = -1;
+				TF2_RemoveCondition(client, TFCond_Buffed);
 			}
 		}
 	}
-  	
-	CleanseBanner_Delay[client] = GetEngineTime();
 	
 	new banner = GetPlayerWeaponSlot(client, 1);
   	
   	if(banner < 0 || banner > 2048)
   		return;
-  	
-  	TF2Attrib_SetByName(banner, "mod soldier buff type", 420.0);
   	
 	CleanseBanner_NumPlayers[banner] = 0;
 	if(CleanseBanner[banner] && BuffDeployed[client])
@@ -170,18 +165,19 @@ static void CleanseBanner_PostThink(client)
 				new Float:distance = GetVectorDistance(Pos1, Pos2);
 				if (distance <= 450.0)
 				{
-					//TF2_RemoveCondition(i, TFCond:16); No longer needed
+					TF2_RemoveCondition(i, TFCond_Buffed);
+					TF2_AddCondition(i, TFCond:20, 0.25);
 					CleanseBanner_ToHeal[i] = true;
 					CleanseBanner_Healer[i] = client;
 					CleanseBanner_NumPlayers[banner]++;
 					
-					ApplyDebuffReduction(client, TFCond_OnFire, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_Jarated, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_Milked, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_Bleeding, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_Gas, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_MarkedForDeath, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(client, TFCond_MarkedForDeathSilent, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_OnFire, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_Jarated, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_Milked, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_Bleeding, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_Gas, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_MarkedForDeath, CleanseBanner_DebuffRed[banner]);
+					ApplyDebuffReduction(i, TFCond_MarkedForDeathSilent, CleanseBanner_DebuffRed[banner]);
 				}
 			}
 		}

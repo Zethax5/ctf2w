@@ -46,6 +46,9 @@ public Plugin:my_info = {
 public OnPluginStart() {
  
  HookEvent("player_builtobject", OnPlayerBuiltObject);
+ HookEvent("object_removed", OnBuildingDestroyed);
+ HookEvent("object_destroyed", OnBuildingDestroyed);
+ HookEvent("object_detonated", OnBuildingDestroyed);
  
  for(new i = 1 ; i < MaxClients ; i++)
  {
@@ -75,8 +78,8 @@ new Float:BuildingUpgrade_Charge[2049];
 //For keeping track of the owner of various buildings
 new SentryOwner[MAXPLAYERS + 1];
 new DispenserOwner[MAXPLAYERS + 1];
-new TeleporterOwner1[MAXPLAYERS + 1];
-new TeleporterOwner2[MAXPLAYERS + 1];
+new TeleporterOwner1[MAXPLAYERS + 1] = {-1, ...};
+new TeleporterOwner2[MAXPLAYERS + 1] = {-1, ...};
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -219,10 +222,38 @@ public Action:OnPlayerBuiltObject(Handle:event, const String:name[], bool:dontBr
 		DispenserOwner[owner] = ent;
 	if(IsClassname(ent, "obj_teleporter"))
 	{
-		if(TeleporterOwner1[owner] == 0)
+		if(!IsValidEntity(TeleporterOwner1[owner]))
 			TeleporterOwner1[owner] = ent;
-		else if(TeleporterOwner2[owner] == 0)
+		else if(!IsValidEntity(TeleporterOwner2[owner]))
 			TeleporterOwner2[owner] = ent;
+	}
+}
+
+public Action:OnBuildingDestroyed(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	new ent = GetEventInt(event, "index");
+	
+	if(IsClassname(ent, "obj_sentrygun"))
+	{
+		SentryOwner[client] = 0;
+	}
+	if(IsClassname(ent, "obj_dispenser"))
+	{
+		DispenserOwner[client] = 0;
+	}
+	if(IsClassname(ent, "obj_teleporter"))
+	{
+		if(ent == TeleporterOwner1[client])
+		{
+			TeleporterOwner1[client] = -1;
+			PrintToChat(client, "Teleporter Slot 1 reset");
+		}
+		else if(ent == TeleporterOwner2[client])
+		{
+			TeleporterOwner2[client] = -1;
+			PrintToChat(client, "Teleporter Slot 2 reset");
+		}
 	}
 }
 
@@ -235,30 +266,4 @@ public OnEntityDestroyed(ent)
 	BuildingUpgrade_Charge[ent] = 0.0;
 	BuildingUpgrade_MaxCharge[ent] = 0.0;
 	BuildingUpgrade_SentryMult[ent] = 0.0;
-	
-	if(IsClassname(ent, "obj_sentrygun"))
-	{
-		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
-		if(!IsValidClient(owner))
-			return;
-		SentryOwner[owner] = 0;
-	}
-	if(IsClassname(ent, "obj_dispenser"))
-	{
-		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
-		if(!IsValidClient(owner))
-			return;
-		DispenserOwner[owner] = 0;
-	}
-	if(IsClassname(ent, "obj_teleporter"))
-	{
-		new owner = GetEntPropEnt(ent, Prop_Data, "m_hOwnerEntity");
-		if(!IsValidClient(owner))
-			return;
-		
-		if(TeleporterOwner1[owner] == ent)
-			TeleporterOwner1[owner] = 0;
-		else if(TeleporterOwner2[owner] == ent)
-			TeleporterOwner2[owner] = 0;
-	}
 }
