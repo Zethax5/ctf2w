@@ -69,7 +69,7 @@
 #define TF_DMG_SCATTERGUN_CRIT              TF_DMG_SCATTERGUN | TF_DMG_CRIT                         // 540016640    ► Scattergun && Shotgun && Rescue Ranger.
 #define TF_DMG_SHORTSTOP_CRIT               TF_DMG_SHORTSTOP | TF_DMG_CRIT                          // 540016642
 
-new Float:CombatTime[MAXPLAYERS + 1];
+//new Float:CombatTime[MAXPLAYERS + 1];
 new LastWeaponHurtWith[MAXPLAYERS + 1];
 
 //Returns the medigun patient of the client
@@ -239,16 +239,16 @@ stock HealPlayer(healer = -1, patient = -1, amount = 0, Float:overheal = 1.0)
 	if(amount > 0)
 	{
 		health += amount;
+		if(health > maxhealth * overheal)
+		{
+			health = RoundFloat(maxhealth * overheal);
+		}
 		SetEntityHealth(patient, health);
 		new Handle:healevent = CreateEvent("player_healed", true);
 		SetEventInt(healevent, "patient", patient);
 		SetEventInt(healevent, "healer", healer);
 		SetEventInt(healevent, "amount", amount);
 		FireEvent(healevent);
-		if(health > maxhealth * overheal)
-		{
-			health = maxhealth * overheal;
-		}
 	}
 }
 
@@ -527,4 +527,27 @@ public Action:RemoveParticle(Handle:timer, any:particle) //Chawlz' code
 			particle = -1;
 		}
 	}
+}
+
+stock GetWeaponSlot(client, weapon)
+{
+	if(!IsValidClient(client)) return -1;
+	
+	for(new i = 0; i < 5; i++)
+    {
+        if(weapon == GetPlayerWeaponSlot(client, i))
+        {
+            return i;
+        }
+    }
+	return -1;
+}
+//13-9
+stock GetClientSlot(client)
+{
+	if(!IsValidClient(client)) return -1;
+	if(!IsPlayerAlive(client)) return -1;
+	
+	new slot = GetWeaponSlot(client, GetActiveWeapon(client));
+	return slot;
 }
