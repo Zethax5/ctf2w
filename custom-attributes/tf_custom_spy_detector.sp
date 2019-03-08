@@ -51,8 +51,8 @@ public OnPluginStart() {
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_Think, OnClientThink);
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
 new bool:Detector[2049];
@@ -93,12 +93,17 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
 	if(victim)
 	{
 		if(Detected[victim])
 		{
+			if(TF2_IsPlayerInCondition(victim, TFCond_MarkedForDeathSilent))
+			{
+				damage /= 1.35;
+			}
+			
 			damage *= 1.0 + Detected_DmgVuln[victim];
 			return Plugin_Changed;
 		}
@@ -106,7 +111,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	return Plugin_Continue;
 }
 
-public OnClientThink(client)
+public OnClientPreThink(client)
 {
 	if(!IsValidClient(client))
 		return;
@@ -118,7 +123,10 @@ public OnClientThink(client)
 	if(weapon < 0 || weapon > 2048)
 		return;
 	
-	if(Detector[weapon] && GetEngineTime() >= LastTick[client] + 0.1)
+	if(!Detector[weapon])
+		return;
+	
+	if(GetEngineTime() >= LastTick[client] + 0.1)
 		Detector_Think(client, weapon);
 }
 
@@ -171,12 +179,11 @@ void RemoveDetection(client)
 void Detector_Think(client, weapon)
 {
 	new metal = GetEntProp(client, Prop_Data, "m_iAmmo", 4, 3);
-	if(metal > 0)
+	if(Detector[weapon] && metal > 0)
 	{
-		//now begins some intense shit
+		//now begins some intense stuff
 		//this indexes all players on the server and checks for distance from the player
 		//reasons why we only do this about ten times a second
-		
 		new Float:attackerPos[3];
 		GetClientAbsOrigin(client, attackerPos);
 		new Float:targetPos[3];
@@ -192,11 +199,15 @@ void Detector_Think(client, weapon)
 					Detected_Dur[target] = GetEngineTime();
 					Detected_MaxDur[target] = Detector_Duration[weapon];
 					Detected_DmgVuln[target] = Detector_DmgVuln[weapon];
-					SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
+					SetEntProp(target, Prop_Send, "m_bGlowEnabled", 1);
+					TF2_AddCondition(target, TFCond_MarkedForDeathSilent, 0.2);
 				}
 			}
 		}
+		SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
 	}
+	else
+		SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
 	
 	LastTick[client] = GetEngineTime();
 }
