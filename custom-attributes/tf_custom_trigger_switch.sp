@@ -89,7 +89,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
     TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
     TF2Attrib_SetByName(weapon, "sticky air burst mode", 2.0);
-    TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.0);
+    TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.01);
     
     action = Plugin_Handled;
   }
@@ -125,7 +125,7 @@ static void DrunkardsWrath_PostThink(client)
       TF2Attrib_SetByName(weapon, "Reload time decreased", 0.9);
       TF2Attrib_SetByName(weapon, "Blast radius decreased", 0.75);
       TF2Attrib_SetByName(weapon, "sticky air burst mode", 2.0);
-      TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.0);
+      TF2Attrib_SetByName(weapon, "stickybomb fizzle time", 0.01);
       
       //Removing attributes used by AoE mode
       TF2Attrib_RemoveByName(weapon, "damage penalty");

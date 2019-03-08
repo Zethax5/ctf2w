@@ -56,12 +56,16 @@ public OnPluginStart() {
 public OnClientPutInServer(client) {
   
   SDKHook(client, SDKHook_PreThink, OnClientPreThink);
+  //of course Crafting wants damage taken to charge this thing
+  //ugh
+  SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
 //Used to track whether or not a player has deployed a custom buff banner
 new bool:BuffDeployed[MAXPLAYERS + 1];
 
 new bool:CleanseBanner[2049];
+new Float:CleanseBanner_DmgTakenRage[2049];
 new Float:CleanseBanner_DebuffRed[2049];
 new CleanseBanner_Healing[2049];
 new CleanseBanner_NumPlayers[2049];
@@ -83,11 +87,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     
   if(StrEqual(attrib, "soldier buff is cleanse"))
   {
-      new String:values[2][10];
+      new String:values[3][10];
       ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
       
       CleanseBanner_DebuffRed[weapon] = StringToFloat(values[0]);
       CleanseBanner_Healing[weapon] = StringToInt(values[1]);
+      CleanseBanner_DmgTakenRage[weapon] = StringToFloat(values[2]);
+      
       
       //Enables the rage meter and what not
       TF2Attrib_SetByName(weapon, "mod soldier buff type", 1.0);
@@ -99,6 +105,23 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     
   return action;
 }
+
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+{
+	if(victim)
+	{
+		new secondary = GetPlayerWeaponSlot(victim, 1);
+		if(secondary > -1 && CleanseBanner[secondary] && !BuffDeployed[victim])
+		{
+			new Float:rage = GetEntPropFloat(victim, Prop_Send, "m_flRageMeter");
+			rage += (damage / 600.0) * (1.0 - CleanseBanner_DmgTakenRage[secondary]) * 100.0;
+			if(rage > 100.0)
+				rage = 100.0;
+			SetEntPropFloat(victim, Prop_Send, "m_flRageMeter", rage);
+		}
+	}
+}
+
 
 public OnClientPreThink(client)
 {	
@@ -196,6 +219,7 @@ public OnEntityDestroyed(ent)
 	CleanseBanner_NumPlayers[ent] = 0;
 	CleanseBanner_DebuffRed[ent] = 0.0;
 	CleanseBanner_Healing[ent] = 0;
+	CleanseBanner_DmgTakenRage[ent] = 0.0;
 }
 
 //everything below this point is all code from Pikachu

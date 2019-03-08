@@ -159,6 +159,8 @@ static void BoosterUber_PreThink(client, weapon)
 				
 				//patient effects
 				SetEntityHealth(patient, RoundFloat(maxhealth * BoosterUber_Overheal[weapon]));
+				if(TF2_GetPlayerClass(patient) == TFClass_Heavy)
+					SetEntityHealth(patient, maxhealth);
 				BoosterUber_Dur[patient] = GetEngineTime();
 				BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
 				BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];

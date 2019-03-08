@@ -36,6 +36,8 @@ Attributes in this pack:
 #define PLUGIN_DESC "Adds in an attribute associated with a tanky Heavy minigun."
 #define PLUGIN_VERS "v0.0"
 
+#define SOUND_UPGRADE "weapons\vaccinator_charge_tier_04.wav"
+
 #define TF_COND_DEFENSEBUFF_HIGH TFCond:45
 
 new Handle:hudText_Client;
@@ -60,6 +62,11 @@ public OnPluginStart() {
 	}
 	
 	hudText_Client = CreateHudSynchronizer();
+}
+
+public OnMapStart()
+{
+	PrecacheSound(SOUND_UPGRADE, true);
 }
 
 public OnClientPutInServer(client)
@@ -116,8 +123,6 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		if(weapon > -1 && TankUpgrades[weapon])
 		{
 			TankUpgrades_Charge[weapon] += damage * TankUpgrades_DealtChargeRate[weapon];
-			if(TankUpgrades_Charge[weapon] > TankUpgrades_MaxCharge[weapon])
-				TankUpgrades_Charge[weapon] = TankUpgrades_MaxCharge[weapon];
 		}
 	}
 	if(victim)
@@ -126,8 +131,6 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		if(wep > 0 && wep < 2049 && TankUpgrades[wep])
 		{
 			TankUpgrades_Charge[wep] += damage * TankUpgrades_TakenChargeRate[wep];
-			if(TankUpgrades_Charge[wep] > TankUpgrades_MaxCharge[wep])
-				TankUpgrades_Charge[wep] = TankUpgrades_MaxCharge[wep];
 		}
 	}
 }
@@ -153,11 +156,11 @@ static void TankUpgrades_PreThink(client, weapon)
 	if(TankUpgrades_Charge[weapon] >= TankUpgrades_MaxCharge[weapon] && TankUpgrades_Level[weapon] < 6)
 	{
 		TankUpgrades_Level[weapon]++;
+		TankUpgrades_Charge[weapon] -= TankUpgrades_MaxCharge[weapon];
 		if(TankUpgrades_AddPerLevel[weapon] > 1.0 || TankUpgrades_AddPerLevel[weapon] < -1.0)
 			TankUpgrades_MaxCharge[weapon] += TankUpgrades_AddPerLevel[weapon];
 		else
 			TankUpgrades_MaxCharge[weapon] += TankUpgrades_MaxCharge[weapon] * TankUpgrades_AddPerLevel[weapon];
-		TankUpgrades_Charge[weapon] = 0.0;
 		
 		switch(TankUpgrades_Level[weapon])
 		{
@@ -191,6 +194,7 @@ static void TankUpgrades_PreThink(client, weapon)
 		}
 		
 		TF2_AddCondition(client, TF_COND_DEFENSEBUFF_HIGH, TankUpgrades_DmgResistDur[weapon] + (TankUpgrades_AddDurPerLevel[weapon] * TankUpgrades_Level[weapon]));
+		EmitSoundToAll(SOUND_UPGRADE, client);
 	}
 	
 	SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);

@@ -123,7 +123,7 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 				SetAmmo_Weapon(primary, TurnaboutAmmo_Ammo[primary]);
 			}
 		}
-		if(TurnaboutAmmo[weapon])
+		if(weapon > -1 && TurnaboutAmmo[weapon])
 		{
 			TurnaboutAmmo_Ammo[weapon]++;
 		}
@@ -180,7 +180,8 @@ public OnEntityCreated(ent, const String:cls[])
 public Action:OnBuildingSpawned(Handle:timer, any:ref)
 {
 	new ent = EntRefToEntIndex(ref);
-	SDKHook(ent, SDKHook_OnTakeDamagePost, OnTakeDamageBuilding);
+	if(IsValidEntity(ent))
+		SDKHook(ent, SDKHook_OnTakeDamagePost, OnTakeDamageBuilding);
 	return;
 }
 

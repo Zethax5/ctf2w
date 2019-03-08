@@ -175,9 +175,9 @@ static void StoreCritOnHeadshot_PreThink(client, weapon)
 	if(StoreCritOnHeadshot_Crits[weapon] > 0)
 	{
 		if(StoreCritOnHeadshot_IsMinicrits[weapon])
-			TF2_AddCondition(client, TFCond:78, 0.2);
+			TF2_AddCondition(client, TFCond_Buffed, 0.3);
 		else
-			TF2_AddCondition(client, TFCond_CritCanteen, 0.2);
+			TF2_AddCondition(client, TFCond_CritCanteen, 0.3);
 	}
 	
 	//Sets ammo display to show stacks

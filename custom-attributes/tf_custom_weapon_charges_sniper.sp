@@ -163,6 +163,8 @@ void KillsChargeSniper_OnRunCmd(client, buttons, weapon)
 	{
 		new Float:chargeLevel = GetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage");
 		if (chargeLevel > 0.0 && chargeLevel < MinimumSniperCharge[weapon])
+			SetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage", MinimumSniperCharge[weapon]);
+		if(MinimumSniperCharge[weapon] == 100.0)
 			SetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage", MinimumSniperCharge[weapon] + 50.0);
 		
 		SetEntProp(wep, Prop_Send, "m_iClip1", RoundFloat(MinimumSniperCharge[weapon]));

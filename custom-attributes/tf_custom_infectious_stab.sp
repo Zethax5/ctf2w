@@ -13,7 +13,8 @@ Attributes in this pack:
 	- "backstab is infectious"
 		1) Duration of the infection
 		2) Radial infection radius
-		3) Whether or not the infection makes victims take minicrit damage
+		3) % of max health damage per tick to victims
+		4) Whether or not the infection makes victims take minicrit damage
 		
 		On backstab, player will infect the victim and all nearby enemies with a deadly plague.
 		This plague will last for X seconds on the victim, and half that on nearby enemies.
@@ -137,7 +138,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 			PoisonStab_OnTakeDamage(attacker, victim, weapon);
 			
 			//makes it so the backstab doesn't instakill
-			damage = 3.3334;
+			damage = (GetClientMaxHealth(victim) * PoisonStab_Dmg[weapon]) / 3.0;
 			return Plugin_Changed;
 		}
 	}
