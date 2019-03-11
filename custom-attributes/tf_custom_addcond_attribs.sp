@@ -145,7 +145,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		AddcondOnDrink_Condition[weapon][StringToInt(values[0])] = StringToInt(values[0]);
-		AddcondOnDrink_Duration[weapon][StringToInt(values[0])] = StringToFloat(values[0]);
+		AddcondOnDrink_Duration[weapon][StringToInt(values[0])] = StringToFloat(values[1]);
 		
 		AddcondOnDrink[weapon] = true;
 		action = Plugin_Handled;
