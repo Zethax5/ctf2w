@@ -24,7 +24,7 @@ Attributes in this pack:
 	- "dispenser minigun ammo"
 		1) Ammo to dispense per tick
 				
-		Replenishes ammo to allies within the radius at a rate of X ammo per second
+		Replenishes ammo to allies within the radius at a rate of X% max ammo per second
 		Requires "dispenser minigun main" to work.
 	
 	I might remake that attribute that reduces healing from all sources, to make it compatible with this
