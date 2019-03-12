@@ -162,12 +162,20 @@ stock GetClip_Weapon(weapon)
 }
 
 //Gets the ammo of a weapon and returns it
-stock GetAmmo_Weapon(weapon)
+//@param client 		Target client
+//@param weapon			Target weapon
+//
+//@return reserve ammo count, -1 if weapon or client is invalid
+stock GetAmmo_Weapon(client, weapon)
 {
-	if (weapon == -1) return 0;
-	new owner = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
-	if (owner == -1) return 0;
-	return GetEntProp(owner, Prop_Data, "m_iAmmo", 4, 3);
+	if(!IsValidClient(client))
+		return -1;
+	if(!IsValidEntity(weapon))
+		return -1;
+	
+	new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1) * 4;
+	new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+	return GetEntData(client, iAmmoTable + iOffset);
 }
 
 //Sets the clip of a weapon
