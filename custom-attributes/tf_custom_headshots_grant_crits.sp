@@ -107,7 +107,7 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	if(StoreCritOnHeadshot_UseOnMiss[weapon])
 	{
 		if(StoreCritOnHeadshot_Crits[weapon] > 0)
-			StoreCritOnHeadshot_Crits[weapon]--;
+			StoreCritOnHeadshot_Crits[weapon] -= 1;
 	}
 		
 	return Plugin_Continue;
@@ -128,14 +128,14 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				{
 					if(damage >= GetClientHealth(victim))
 					{
-						StoreCritOnHeadshot_Crits[wep]++;
+						StoreCritOnHeadshot_Crits[wep] += 1;
 						if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
 							StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
 					}
 				}
 				else
 				{
-					StoreCritOnHeadshot_Crits[wep]++;
+					StoreCritOnHeadshot_Crits[wep] += 1;
 					if(StoreCritOnHeadshot_Crits[wep] > StoreCritOnHeadshot_Max[wep])
 						StoreCritOnHeadshot_Crits[wep] = StoreCritOnHeadshot_Max[wep];
 				}
@@ -143,7 +143,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		}
 		if(weapon > -1 && StoreCritOnHeadshot[weapon] && !StoreCritOnHeadshot_UseOnMiss[weapon])
 		{
-			StoreCritOnHeadshot_Crits[weapon]--;
+			StoreCritOnHeadshot_Crits[weapon] -= 1;
 			if(StoreCritOnHeadshot_Crits[weapon] < 0)
 				StoreCritOnHeadshot_Crits[weapon] = 0;
 		}

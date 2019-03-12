@@ -38,7 +38,11 @@ public Plugin:my_info = {
 };
 
 public OnPluginStart() {
- 
+ 	
+ 	//stuff used for detecting when a building gets destroyed with a sapper on it
+ 	HookEvent("player_sapped_object", OnBuildingSapped);
+ 	HookEvent("object_destroyed", OnBuildingDestroyed);
+ 	
 	for(new i = 1 ; i < MaxClients ; i++)
 	{
 		if(!IsValidClient(i))
@@ -61,6 +65,7 @@ new TurnaboutAmmo_GainOnBackstab[2049];
 new TurnaboutAmmo_Ammo[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
+new Sapper[2049] = -1;
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -101,9 +106,44 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	if(!TurnaboutAmmo[weapon])
 		return Plugin_Continue;
 	
-	TurnaboutAmmo_Ammo[weapon]--;
+	TurnaboutAmmo_Ammo[weapon] -= 1;
 	
 	return Plugin_Continue;
+}
+
+public Action:OnBuildingSapped(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new building = GetEventInt(event, "object");
+	new attacker = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(building > -1 && attacker > -1)
+	{
+		PrintToChat(attacker, "Building edict: %i", building);
+		Sapper[building] = attacker;
+	}
+}
+
+public Action:OnBuildingDestroyed(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new building = GetEventInt(event, "index");
+	if(IsValidEntity(building))
+	{
+		new HasSapper = GetEntProp(building, Prop_Send, "m_bHasSapper");
+		if(HasSapper && Sapper[building] > -1)
+		{
+			new attacker = Sapper[building];
+			if(IsValidClient(attacker))
+			{
+				new weapon = GetPlayerWeaponSlot(attacker, 0);
+				if(weapon > -1 && TurnaboutAmmo[weapon])
+				{
+					TurnaboutAmmo_Ammo[weapon] += TurnaboutAmmo_GainOnSap[weapon];
+					if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
+						TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
+				}
+				Sapper[building] = -1;
+			}
+		}
+	}
 }
 
 public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
@@ -125,7 +165,7 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 		}
 		if(weapon > -1 && TurnaboutAmmo[weapon])
 		{
-			TurnaboutAmmo_Ammo[weapon]++;
+			TurnaboutAmmo_Ammo[weapon] += 1;
 		}
 	}
 }
@@ -136,7 +176,7 @@ public OnTakeDamageBuilding(victim, attacker, inflictor, Float:damage, damagetyp
 	{
 		if(TurnaboutAmmo[weapon])
 		{
-			TurnaboutAmmo_Ammo[weapon]++;
+			TurnaboutAmmo_Ammo[weapon] += 1;
 		}
 	}
 }
@@ -159,6 +199,9 @@ public OnClientPostThink(client)
 
 void TurnaboutAmmo_PostThink(client, weapon)
 {
+	if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
+		TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
+	
 	SetAmmo_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
 	SetClip_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
 	

@@ -2,16 +2,16 @@
 
 Created by: Zethax
 Document created on: Thursday, December 20th, 2018
-Last edit made on: Saturday, March 2nd, 2019
+Last edit made on: Saturday, March 12th, 2019
 Current version: v0.9
 
 Attributes in this pack:
 	- "soldier buff is cleanse"
-		1) Debuff duration reduction
-		2) Amount to heal per person per second
+		1) Amount to heal per person per second
+		2) Damage taken multiplier
 		
 		Deal damage to gain a buff banner.
-		When full, use to grant yourself and nearby allies reduced debuff duration
+		When full, use to grant yourself and nearby allies debuff immunity
 		and X healing per second based on how many players are in the radius
 
 */
@@ -87,12 +87,11 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
     
   if(StrEqual(attrib, "soldier buff is cleanse"))
   {
-      new String:values[3][10];
+      new String:values[2][10];
       ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
       
-      CleanseBanner_DebuffRed[weapon] = StringToFloat(values[0]);
-      CleanseBanner_Healing[weapon] = StringToInt(values[1]);
-      CleanseBanner_DmgTakenRage[weapon] = StringToFloat(values[2]);
+      CleanseBanner_Healing[weapon] = StringToInt(values[0]);
+      CleanseBanner_DmgTakenRage[weapon] = StringToFloat(values[1]);
       
       
       //Enables the rage meter and what not
@@ -108,7 +107,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
 {
-	if(victim)
+	if(victim != attacker)
 	{
 		new secondary = GetPlayerWeaponSlot(victim, 1);
 		if(secondary > -1 && CleanseBanner[secondary] && !BuffDeployed[victim])
@@ -160,7 +159,8 @@ void CleanseBanner_PreThink(client)
 			new banner = GetPlayerWeaponSlot(healer, 1);
 			if(banner > 0 && banner < 2049 && CleanseBanner[banner])
 			{
-				HealPlayer(healer, client, CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner] / 5, 1.0);
+				new healing = CleanseBanner_Healing[banner] * CleanseBanner_NumPlayers[banner] / 5;
+				HealPlayer(healer, client, healing, 1.0);
 				CleanseBanner_ToHeal[client] = false;
 				CleanseBanner_Healer[client] = -1;
 				TF2_RemoveCondition(client, TFCond_Buffed);
@@ -194,13 +194,13 @@ void CleanseBanner_PreThink(client)
 					CleanseBanner_Healer[i] = client;
 					CleanseBanner_NumPlayers[banner]++;
 					
-					ApplyDebuffReduction(i, TFCond_OnFire, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_Jarated, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_Milked, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_Bleeding, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_Gas, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_MarkedForDeath, CleanseBanner_DebuffRed[banner]);
-					ApplyDebuffReduction(i, TFCond_MarkedForDeathSilent, CleanseBanner_DebuffRed[banner]);
+					TF2_RemoveCondition(i, TFCond_OnFire);
+					TF2_RemoveCondition(i, TFCond_Jarated);
+					TF2_RemoveCondition(i, TFCond_Milked);
+					TF2_RemoveCondition(i, TFCond_MarkedForDeath);
+					TF2_RemoveCondition(i, TFCond_MarkedForDeathSilent);
+					TF2_RemoveCondition(i, TFCond_Gas);
+					TF2_RemoveCondition(i, TFCond_Bleeding);
 				}
 			}
 		}
@@ -220,21 +220,4 @@ public OnEntityDestroyed(ent)
 	CleanseBanner_DebuffRed[ent] = 0.0;
 	CleanseBanner_Healing[ent] = 0;
 	CleanseBanner_DmgTakenRage[ent] = 0.0;
-}
-
-//everything below this point is all code from Pikachu
-//He takes all the credit. I would have never figured any of this out
-
-void ApplyDebuffReduction(int client, TFCond cond, float flDebuffScale) {
-	if (!TF2_IsPlayerInCondition(client, cond)) {
-		return;
-	}
-	
-	float flDuration = TF2_GetConditionData(client, cond, ConditionInfo_Duration);
-	if (flDuration == TFCondDuration_Infinite) {
-		return;
-	}
-	
-	TF2_SetConditionData(client, cond, ConditionInfo_Duration,
-			flDuration - (GetGameFrameTime() * flDebuffScale));
 }
