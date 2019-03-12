@@ -78,7 +78,6 @@ new Float:BoosterUber_Dur[MAXPLAYERS + 1];
 new Float:BoosterUber_Protection[2049];
 new BoosterUber_Particle[MAXPLAYERS + 1];
 new bool:Shielded[MAXPLAYERS + 1];
-new Float:BoosterUber_OldDecay[2049];
 new Float:BoosterUber_UseDelay[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
@@ -101,7 +100,6 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		BoosterUber_Overheal[weapon] = StringToFloat(values[1]);
 		BoosterUber_ShieldDur[weapon] = StringToFloat(values[2]);
 		BoosterUber_Protection[weapon] = StringToFloat(values[3]);
-		BoosterUber_OldDecay[weapon] = StringToFloat(values[4]);
 		
 		//sets ubercharge to an invalid value
 		//making it so it doesn't do anything
@@ -144,8 +142,6 @@ static void BoosterUber_PreThink(client, weapon)
 	if(!BoosterUber[weapon])
 		return;
 	
-	TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon]);
-	
 	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	
 	if((buttons & IN_ATTACK2) == IN_ATTACK2 && GetEngineTime() >= BoosterUber_UseDelay[weapon] + 0.25)
@@ -165,7 +161,6 @@ static void BoosterUber_PreThink(client, weapon)
 				BoosterUber_ShieldDur[patient] = BoosterUber_ShieldDur[weapon];
 				BoosterUber_Protection[patient] = BoosterUber_Protection[weapon];
 				Shielded[patient] = true;
-				TF2Attrib_SetByName(weapon, "overheal decay bonus", BoosterUber_OldDecay[weapon] * 2.0);
 				
 				//medic effects
 				SetEntityHealth(client, RoundFloat(GetClientMaxHealth(client) * 1.5));
