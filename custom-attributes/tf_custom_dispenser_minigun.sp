@@ -16,15 +16,15 @@ Attributes in this pack:
 		Don't want Dispensing Fury? Set the values associated with it to 0 to disable.
 
 	- "dispenser minigun heal"
-		1) Heal rate in a percentage of max health
+		1) Healing per second
 				
-		Restores health to allies within the radius at a rate of X% of their max health per second.
+		Restores health to allies within the radius at a rate of X% of max health per second
 		Requires "dispenser minigun main" to work.
 				
 	- "dispenser minigun ammo"
-		1) Ammo dispensing rate in a percentage of max ammo pool
+		1) Ammo to dispense per tick
 				
-		Replenishes ammo to allies within the radius at a rate of X% of their max ammo per second.
+		Replenishes ammo to allies within the radius at a rate of X ammo per second
 		Requires "dispenser minigun main" to work.
 	
 	I might remake that attribute that reduces healing from all sources, to make it compatible with this
@@ -68,7 +68,7 @@ public Plugin:my_info = {
 
 public OnPluginStart() 
 {
-
+	
 	for(new i = 1; i < MaxClients; i++)
 	{
 		if(!IsValidClient(i))
@@ -233,7 +233,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 				{
 					
 					//Gotta check to see if the healing target is under max health first
-					if(GetClientHealth(i) < GetClientMaxHealth(i))
+					if(GetClientHealth(i) < GetClientMaxHealth(i) && i != client)
 					{
 						AmountHealed += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
 						new Float:position[3];
@@ -241,7 +241,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 						if(TF2_GetClientTeam(i) == TFTeam_Blue)
 							SpawnParticle(i, "healthgained_blu", position);
 						if(TF2_GetClientTeam(i) == TFTeam_Red)
-							SpawnParticle(i, "healthgained_blu", position);
+							SpawnParticle(i, "healthgained_red", position);
 					}
 					
 					if(DispenserMinigun_Heal[weapon])
@@ -250,11 +250,12 @@ static void DispenserMinigun_PostThink(client, weapon)
 							HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
 						else if(TF2_GetPlayerClass(i) == TFClass_Heavy)
 						{
+							new wep = GetActiveWeapon(i);
 							//Should the player have reduced healing while spun up
-							if(i != client && ReduceHealingSpinning[GetActiveWeapon(i)] && TF2_IsPlayerInCondition(i, TFCond:0))
-								HealPlayer(client, i, RoundFloat((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[GetActiveWeapon(i)])), _); //reduced healing
+							if(i != client && ReduceHealingSpinning[wep] && TF2_IsPlayerInCondition(i, TFCond:0))
+								HealPlayer(client, i, RoundToFloor((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[wep])), _); //reduced healing
 							else
-								HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _); //defaults to regular healing amount
+								HealPlayer(client, i, RoundToFloor(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _); //defaults to regular healing amount
 						}
 					}
 					//Emits healing sound to players that step into the radius
@@ -270,18 +271,16 @@ static void DispenserMinigun_PostThink(client, weapon)
 					//If the weapon is also set to dispense ammo, this executes
 					if(DispenserMinigun_Ammo[weapon])
 					{
-						for(new j = 0; j <= 4 ; j++)
+						for(new j = 0; j <= 3 ; j++)
 						{
 							new wep = GetPlayerWeaponSlot(i, j);
 							if(wep == -1) continue;
-							new ammo = GetAmmo_Weapon(wep);
-							ammo += MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon];
-							if(ammo > MaxAmmo[wep])
-								ammo = MaxAmmo[wep];
+							new ammo = RoundToFloor(MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon]);
+							new ammotype = GetEntProp(wep, Prop_Data, "m_iPrimaryAmmoType");
 							
 							//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
 							
-							SetAmmo_Weapon(wep, ammo);
+							GivePlayerAmmo(i, ammo, ammotype);
 							//PrintToChat(client, "ammo dispensed");
 						}
 					}
@@ -342,28 +341,23 @@ static void DispenserMinigun_PostThink(client, weapon)
 	LastTick[client] = GetEngineTime();
 }
 
-//Done for tracking maximum ammo counts
-//Only way I know to do this and it sucks
-public OnEntityCreated(ent, const String:class[])
+public OnEntityCreated(ent, const String:name[])
 {
 	if(ent < 0 || ent > 2048)
 		return;
 
-	if (!StrContains(class, "tf_weapon_")) 
+	if (!StrContains(name, "tf_weapon_")) 
 		CreateTimer(0.3, OnWeaponSpawned, EntIndexToEntRef(ent));
 }
 
-//Shortly after a weapon spawns, this executes
-//Simply tracks the maximum ammo a weapon has
 public Action:OnWeaponSpawned(Handle:timer, any:ref)
 {
 	new ent = EntRefToEntIndex(ref);
 	if(!IsValidEntity(ent) || ent == -1)
 		return;
-	//PrintToChatAll("weapon initializing");
-	
-	MaxAmmo[ent] = GetAmmo_Weapon(ent);
-	//PrintToChatAll("Stored max ammo count at %i", MaxAmmo[ent]);
+		
+	new owner = ReturnOwner(ent);
+	MaxAmmo[ent] = GetAmmo_Weapon(owner, ent);
 }
 
 public OnEntityDestroyed(ent)
