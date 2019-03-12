@@ -51,7 +51,10 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_VERS "v1.1"
 
-#define SOUND_DISPENSE "weapons/dispenser_heal.wav"
+#define SOUND_DISPENSER_HEAL "weapons/dispenser_heal.wav"
+
+#define TF_ECON_INDEX_PERSIAN_PERSUADER 404
+#define TF_ECON_INDEX_BACKSCRATCHER 326
 
 public Plugin:my_info = {
 	
@@ -69,6 +72,11 @@ public Plugin:my_info = {
 public OnPluginStart() 
 {
 	
+	HookEvent("player_death", OnPlayerDeath);
+	HookEvent("player_spawn", OnPlayerSpawn);
+	HookEvent("player_disconnect", OnPlayerDisconnect);
+	HookEvent("post_inventory_application", OnInventoryApplication);
+	
 	for(new i = 1; i < MaxClients; i++)
 	{
 		if(!IsValidClient(i))
@@ -76,6 +84,11 @@ public OnPluginStart()
 		
 		OnClientPutInServer(i);
 	}
+}
+
+public OnMapStart()
+{
+	PrecacheSound(SOUND_DISPENSER_HEAL, true);
 }
 
 public OnClientPutInServer(client)
@@ -101,16 +114,40 @@ new Float:DispenserMinigun_DispenseRate[2049];
 new bool:ReduceHealingSpinning[2049];
 new Float:ReduceHealingSpinning_Amount[2049];
 
-//Tracks last time a player performed a healing tick
-//Used to reduce the load on the server heavily
 new Float:LastTick[MAXPLAYERS + 1];
-
-//Tracks maximum ammo on a weapon
-//Used for ammo restoration
+new Float:LastAmmoTick[MAXPLAYERS + 1];
+new Float:LastHealTick[MAXPLAYERS + 1];
 new MaxAmmo[2049];
-
-//Used for tracking whether or not a Heavy healed a player last tick
 new LastHealer[MAXPLAYERS + 1];
+
+new g_iParticleEntityStart[MAXPLAYERS+1][MAXPLAYERS+1];
+new g_iParticleEntityEnd[MAXPLAYERS+1][MAXPLAYERS+1];
+
+//all of this resets sounds and particles
+public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	KillAllDualParticles(client);
+	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+}
+public Action:OnPlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	KillAllDualParticles(client);
+	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+}
+public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	KillAllDualParticles(client);
+	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+}
+public Action:OnInventoryApplication(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	KillAllDualParticles(client);
+	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+}
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -179,15 +216,78 @@ public void OnClientPostThink(client)
 	if(weapon < 0 || weapon > 2048)
 		return;
 	
+	if(DispenserMinigun_InRadius[client])
+	{
+		new healer = LastHealer[client];
+		if(healer == -1)
+			return;
+		new wep = GetActiveWeapon(healer);
+		if(DispenserMinigun_Heal[wep])
+		{
+			//base delay
+			new Float:delay = 1.0 / (GetClientMaxHealth(client) * DispenserMinigun_HealRate[wep]);
+			
+			if(TF2_GetPlayerClass(client) == TFClass_Heavy && TF2_IsPlayerInCondition(client, TFCond:0) && client != healer)
+			{
+				//increase delay if they have reduced healing while spun up
+				if(ReduceHealingSpinning[weapon])
+					delay /= ReduceHealingSpinning_Amount[weapon];
+			}
+			//iincrease delay if they have the persian persuader or back scratcher equipped
+			if(GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_PERSIAN_PERSUADER || 
+				GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_BACKSCRATCHER)
+				delay /= 0.5;
+			
+			//decrease delay if the Heavy is using dispensing fury
+			if(DispenserMinigun_InFury[wep])
+				delay *= 0.5;
+			
+			if(GetClientHealth(client) < GetClientMaxHealth(client) && GetEngineTime() >= LastHealTick[client] + delay)
+			{
+				HealPlayer(healer, client, 1, 1.0);
+				
+				if(!DispenserMinigun_InFury[wep] && client != healer)
+					DispenserMinigun_Charge[wep] += 1;
+				
+				LastHealTick[client] = GetEngineTime();
+			}
+		}
+		if(DispenserMinigun_Ammo[wep])
+		{
+			new Float:delay = 1.0;
+			if(DispenserMinigun_InFury[wep])
+				delay *= 0.5;
+			if(GetEngineTime() >= LastAmmoTick[client] + delay)
+			{
+				for(new j = 0; j <= 3 ; j++)
+				{
+					new target = GetPlayerWeaponSlot(client, j);
+					if(target == -1) continue;
+					new ammo = RoundToFloor(MaxAmmo[target] * DispenserMinigun_DispenseRate[wep]);
+					new ammotype = GetEntProp(target, Prop_Data, "m_iPrimaryAmmoType");
+					
+					//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
+					
+					GivePlayerAmmo(client, ammo, ammotype);
+					//PrintToChat(client, "ammo dispensed");
+				}
+				LastAmmoTick[client] = GetEngineTime();
+			}
+		}
+		if(DispenserMinigun_InRadius[client] && !TF2_IsPlayerInCondition(healer, TFCond:0))
+		{
+			DispenserMinigun_InRadius[client] = false;
+			LastHealer[client] = -1;
+		}
+	}
+	
 	if(!DispenserMinigun[weapon])
 		return;
 		
 	new Float:rage = (DispenserMinigun_Charge[weapon] / DispenserMinigun_MaxCharge[weapon]) * 100.0;
 	SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage);
 	
-	if(GetEngineTime() > LastTick[client] + 1.0 && !DispenserMinigun_InFury[weapon])
-		DispenserMinigun_PostThink(client, weapon);
-	else if(GetEngineTime() > LastTick[client] + 0.5 && DispenserMinigun_InFury[weapon])
+	if(GetEngineTime() > LastTick[client] + 0.1)
 		DispenserMinigun_PostThink(client, weapon);
 }
 
@@ -227,63 +327,31 @@ static void DispenserMinigun_PostThink(client, weapon)
 				    LastHealer[i] == client && DispenserMinigun_InRadius[i])
 				{
 					DispenserMinigun_InRadius[i] = false;
+					KillDualParticle(client, i);
 				}
 				
 				if(distance <= DispenserMinigun_Radius[weapon] * radmult)
 				{
-					
-					//Gotta check to see if the healing target is under max health first
-					if(GetClientHealth(i) < GetClientMaxHealth(i) && i != client)
-					{
-						AmountHealed += RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]);
-						new Float:position[3];
-						position[2] += 75;
-						if(TF2_GetClientTeam(i) == TFTeam_Blue)
-							SpawnParticle(i, "healthgained_blu", position);
-						if(TF2_GetClientTeam(i) == TFTeam_Red)
-							SpawnParticle(i, "healthgained_red", position);
-					}
-					
-					if(DispenserMinigun_Heal[weapon])
-					{
-						if(TF2_GetPlayerClass(i) != TFClass_Heavy)
-							HealPlayer(client, i, RoundFloat(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _);
-						else if(TF2_GetPlayerClass(i) == TFClass_Heavy)
-						{
-							new wep = GetActiveWeapon(i);
-							//Should the player have reduced healing while spun up
-							if(i != client && ReduceHealingSpinning[wep] && TF2_IsPlayerInCondition(i, TFCond:0))
-								HealPlayer(client, i, RoundToFloor((GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]) * (1.0 - ReduceHealingSpinning_Amount[wep])), _); //reduced healing
-							else
-								HealPlayer(client, i, RoundToFloor(GetClientMaxHealth(i) * DispenserMinigun_HealRate[weapon]), _); //defaults to regular healing amount
-						}
-					}
 					//Emits healing sound to players that step into the radius
 					if(!DispenserMinigun_InRadius[i])
 					{
 						DispenserMinigun_InRadius[i] = true;
-						if(i == client)
-							EmitSoundToAll(SOUND_DISPENSE, client);
-					}
-					if(DispenserMinigun_InFury[weapon])
-						TF2_AddCondition(i, TFCond:20, 0.6, client);
-					
-					//If the weapon is also set to dispense ammo, this executes
-					if(DispenserMinigun_Ammo[weapon])
-					{
-						for(new j = 0; j <= 3 ; j++)
+						StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+						if(DispenserMinigun_InFury[weapon])
+							EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM, _, _, _, 125);
+						else
+							EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
+						
+						if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked))
 						{
-							new wep = GetPlayerWeaponSlot(i, j);
-							if(wep == -1) continue;
-							new ammo = RoundToFloor(MaxAmmo[wep] * DispenserMinigun_DispenseRate[weapon]);
-							new ammotype = GetEntProp(wep, Prop_Data, "m_iPrimaryAmmoType");
-							
-							//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
-							
-							GivePlayerAmmo(i, ammo, ammotype);
-							//PrintToChat(client, "ammo dispensed");
+							if(TF2_GetClientTeam(i) == TFTeam_Blue)
+								AttachDualParticle(client, i, "medicgun_beam_blue");
+							if(TF2_GetClientTeam(i) == TFTeam_Red)
+								AttachDualParticle(client, i, "medicgun_beam_red");
 						}
 					}
+					if(DispenserMinigun_InFury[weapon])
+						TF2_AddCondition(i, TFCond:20, 0.2, client);
 					
 					//Helps the system track who did the healing
 					LastHealer[i] = client;
@@ -293,10 +361,11 @@ static void DispenserMinigun_PostThink(client, weapon)
 	}
 	else if(!TF2_IsPlayerInCondition(client, TFCond:0))
 	{
-		if(DispenserMinigun_InRadius[client])
+		if(DispenserMinigun[weapon])
 		{
 			DispenserMinigun_InRadius[client] = false;
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+			KillAllDualParticles(client);
 		}
 		
 		if(ReduceHealingSpinning[weapon])
@@ -323,7 +392,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 			DispenserMinigun_InFury[weapon] = true; //Tells the system this guy is dispensing like mad
 			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
 			
-			StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+			StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			DispenserMinigun_InRadius[client] = false;
 		}
 	}
@@ -333,7 +402,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
 							//Allows him to gain rage again
-		StopSound(client, SNDCHAN_AUTO, SOUND_DISPENSE);
+		StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+		EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
 		DispenserMinigun_InRadius[client] = false;
 	}
 	
@@ -382,4 +452,72 @@ public OnEntityDestroyed(ent)
 	ReduceHealingSpinning_Amount[ent] = 0.0;
 	
 	MaxAmmo[ent] = 0;
+}
+
+AttachDualParticle(iClient, iTarget, String:particleType[])
+{
+	g_iParticleEntityStart[iClient][iTarget] = CreateEntityByName("info_particle_system");
+	g_iParticleEntityEnd[iClient][iTarget] = CreateEntityByName("info_particle_system");
+	if (IsValidEdict(g_iParticleEntityStart[iClient][iTarget]))
+	{ 
+	new String:tName[128];
+	Format(tName, sizeof(tName), "target%i", iClient);
+	DispatchKeyValue(iClient, "targetname", tName);
+	
+	new String:cpName[128];
+	Format(cpName, sizeof(cpName), "target%i", iTarget);
+	DispatchKeyValue(iTarget, "targetname", cpName);
+	
+	//--------------------------------------
+	new String:cp2Name[128];
+	Format(cp2Name, sizeof(cp2Name), "tf2particle%i", iTarget);
+	
+	DispatchKeyValue(g_iParticleEntityEnd[iClient][iTarget], "targetname", cp2Name);
+	DispatchKeyValue(g_iParticleEntityEnd[iClient][iTarget], "parentname", cpName);
+	
+	SetVariantString(cpName);
+	AcceptEntityInput(g_iParticleEntityEnd[iClient][iTarget], "SetParent");
+	
+	SetVariantString("flag");
+	AcceptEntityInput(g_iParticleEntityEnd[iClient][iTarget], "SetParentAttachment");
+	//-----------------------------------------------
+	
+	
+	DispatchKeyValue(g_iParticleEntityStart[iClient][iTarget], "targetname", "tf2particle");
+	DispatchKeyValue(g_iParticleEntityStart[iClient][iTarget], "parentname", tName);
+	DispatchKeyValue(g_iParticleEntityStart[iClient][iTarget], "effect_name", particleType);
+	DispatchKeyValue(g_iParticleEntityStart[iClient][iTarget], "cpoint1", cp2Name);
+	
+	DispatchSpawn(g_iParticleEntityStart[iClient][iTarget]);
+	
+	SetVariantString(tName);
+	AcceptEntityInput(g_iParticleEntityStart[iClient][iTarget], "SetParent");
+	
+	SetVariantString("flag");
+	AcceptEntityInput(g_iParticleEntityStart[iClient][iTarget], "SetParentAttachment");
+	
+	//The particle is finally ready
+	ActivateEntity(g_iParticleEntityStart[iClient][iTarget]);
+	AcceptEntityInput(g_iParticleEntityStart[iClient][iTarget], "start");
+	}
+} 
+
+public KillDualParticle(iClient, iTarget)
+{
+	if (g_iParticleEntityStart[iClient][iTarget] > 0)
+		AcceptEntityInput(g_iParticleEntityStart[iClient][iTarget], "kill");
+	if (g_iParticleEntityEnd[iClient][iTarget] > 0)
+		AcceptEntityInput(g_iParticleEntityEnd[iClient][iTarget], "kill");
+	
+	g_iParticleEntityStart[iClient][iTarget] = 0;
+	g_iParticleEntityEnd[iClient][iTarget] = 0;
+}
+
+KillAllDualParticles(iClient)
+{
+	for (new iTarget =0;iTarget < MaxClients;iTarget++)
+	{
+		KillDualParticle(iClient, iTarget);
+		KillDualParticle(iTarget, iClient);
+	}
 }
