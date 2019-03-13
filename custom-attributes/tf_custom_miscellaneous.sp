@@ -103,7 +103,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	if(attacker)
+	if(attacker && weapon > -1)
 	{
 		if(ModifyHeadshots[weapon] && damageCustom == TF_CUSTOM_HEADSHOT)
 		{

@@ -109,7 +109,7 @@ public Action:OnInventoryApplication(Handle:event, const String:name[], bool:don
 
 public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	if(attacker && victim)
+	if(attacker && victim && weapon > -1)
 	{
 		if(SlowOnHit[weapon])
 		{
@@ -140,6 +140,7 @@ void Slowed_PreThink(client)
 	{
 		RemoveSlowness(client);
 	}
+	LastTick[client] = GetEngineTime();
 }
 
 public OnEntityDestroyed(ent)
