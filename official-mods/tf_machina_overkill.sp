@@ -2,8 +2,8 @@
 
 Creator: Zethax
 Document created on: Tuesday, December 18th, 2018
-Last edit made: Tuesday, December 18th, 2018
-Current Version: v0.2
+Last edit made: Wednesday, March 13th, 2019
+Current Version: v1.0
 
 Functionality:
 Allows the Machina to take a percentage of overkill damage and add that to the next shot.
@@ -12,15 +12,19 @@ Overkill damage is defined as "the difference in damage and the victim's health 
 
 */
 
-#pragma semicolon         1
-#include                  <sourcemod>
-#include                  <zethax>
-#include                  <tf2>
+#pragma semicolon         	1
+#include                  	<sourcemod>
+#include				  	<sdkhooks>
+#include				  	<sdktools>
+#include                  	<zethax>
+#include                  	<tf2>
 
-#define PLUGIN_AUTHOR     "Zethax"
-#define PLUGIN_NAME       "Machina Overkill Attribute"
-#define PLUGIN_DESC       "Allows the Machina to use overkill damage on successive shots"
-#define PLUGIN_VERSION    "v0.2"
+#define PLUGIN_AUTHOR     	"Zethax"
+#define PLUGIN_NAME       	"Machina Overkill Attribute"
+#define PLUGIN_DESC       	"Allows the Machina to use overkill damage on successive shots"
+#define PLUGIN_VERSION    	"v1.0"
+
+#define TF_ECON_INDEX_MACHINA 526
 
 public Plugin:my_info = {
   name        =   PLUGIN_NAME,
@@ -39,7 +43,7 @@ public OnPluginStart()
   
   for(new i = 1; i <= MaxClients; i++)
   {
-    if(IsValidClient(i))
+    if(IsClientConnected(i) && IsClientInGame(i))
     {
       OnClientPutInServer(i);
     }
@@ -87,11 +91,11 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 {
   new Action:action;
   
-  if(!IsValidClient(client)) return action;
+  if(!IsClientConnected(client) || !IsClientInGame(client)) return action;
   if (weapon < 0 || weapon > 2048)return action;
   
   //If a power shot is stored AND the weapon is the Machina.
-  if(GetWeaponIndex(weapon) == 526 && Overkill_Shot[weapon] > 0)
+  if(GetWeaponIndex(weapon) == TF_ECON_INDEX_MACHINA && Overkill_Shot[weapon] > 0)
     Overkill_Shot[weapon]--; //Tell the system the player has fired their power shot.
   
   return action;
@@ -104,12 +108,12 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
   new Action:action;
   
-  if (!IsValidClient(attacker))return action;
-	if (!IsValidClient(victim))return action;
-	if (weapon < 0 || weapon > 2048)return action;
+  if (!IsClientConnected(attacker) || !IsClientInGame(attacker))return action;
+  if (!IsClientConnected(victim) || !IsClientInGame(victim))return action;
+  if (weapon < 0 || weapon > 2048)return action;
   
   //If the weapon used was the Machina
-  if(GetWeaponIndex(weapon) == 526) //526 = Machina
+  if(GetWeaponIndex(weapon) == TF_ECON_INDEX_MACHINA)
   {
     //This is where we apply the bonus damage, should any be stored.
     if(Overkill_BonusDmg[weapon] > 1.0 && Overkill_Shot[weapon] > 0)
@@ -147,7 +151,6 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
 {
   //Defines who the victim and attacker are in variables
-  new victim = GetClientOfUserId(GetEventInt(event, "userid"));
   new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
   
   //Takes the variable we used earlier to store the weapon damage was dealt with
@@ -155,19 +158,24 @@ public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
   new weapon = LastWeaponHurtWith[attacker];
   
   //If the weapon used to kill was the Machina
-  if(GetWeaponIndex(weapon) == 526) //526 = Machina
+  if(weapon > -1 && GetWeaponIndex(weapon) == TF_ECON_INDEX_MACHINA && Overkill_Shot[weapon] == 0)
   {
-    //Here's where the bonus damage is actually calculated
+     CreateTimer(0.1, ApplyBonusDamage, weapon, TIMER_FLAG_NO_MAPCHANGE);
+  }
+}
+
+public Action:ApplyBonusDamage(Handle:timer, any:weapon)
+{
+	//Here's where the bonus damage is actually calculated
     //Takes the original damage dealt and subtracts the victim's health from it
     //Then multiplies the result by a decimal, so we're not dealing a boatload of damage after headshotting a Scout at max charge
-    Overkill_BonusDmg[weapon] 	= (Overkill_Dmg[weapon] - (float)Overkill_EnemyHealth[weapon]) * 0.2;
+    Overkill_BonusDmg[weapon] 	+= (Overkill_Dmg[weapon] - float(Overkill_EnemyHealth[weapon])) * 0.2;
     
     //Telling the system that the player hasn't fired their new power shot
     Overkill_Shot[weapon] 	= 2; 
     
     //Sets the variables used to calculate bonus damage to 0
     Overkill_Dmg[weapon]        = 0.0;
-    Overkill_EnemyHealth[weapon = 0;
-  }
+    Overkill_EnemyHealth[weapon] = 0;
 }
 
