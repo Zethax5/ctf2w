@@ -128,7 +128,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
     {
       //Stores the total damage dealt divided by the multiplier applied by Overkill damage.
       OriginalDamage[attacker]  = damage - Overkill_BonusDmg[weapon];
-      Overkill_BonusDmg[weapon] = 0.0;
+      CreateTimer(0.1, RemoveBonusDamage, weapon, TIMER_FLAG_NO_MAPCHANGE);
     }
     //Should the weapon not have stored overkill damage, just store raw damage
     else OriginalDamage[attacker] = damage;
@@ -160,17 +160,18 @@ public Action:Event_Death(Handle:event, const String:name[], bool:dontBroadcast)
   //If the weapon used to kill was the Machina
   if(weapon > -1 && GetWeaponIndex(weapon) == TF_ECON_INDEX_MACHINA && Overkill_Shot[weapon] == 0)
   {
+  	//Here's where the bonus damage is actually calculated
+    //Takes the original damage dealt and subtracts the victim's health from it
+    //Then multiplies the result by a decimal, so we're not dealing a boatload of damage after headshotting a Scout at max charge
+  	 Overkill_BonusDmg[weapon] 	+= (Overkill_Dmg[weapon] - float(Overkill_EnemyHealth[weapon])) * 0.2;
+  	 
+  	 //Applies the calculated bonus damage to the player's next shot
      CreateTimer(0.1, ApplyBonusDamage, weapon, TIMER_FLAG_NO_MAPCHANGE);
   }
 }
 
 public Action:ApplyBonusDamage(Handle:timer, any:weapon)
 {
-	//Here's where the bonus damage is actually calculated
-    //Takes the original damage dealt and subtracts the victim's health from it
-    //Then multiplies the result by a decimal, so we're not dealing a boatload of damage after headshotting a Scout at max charge
-    Overkill_BonusDmg[weapon] 	+= (Overkill_Dmg[weapon] - float(Overkill_EnemyHealth[weapon])) * 0.2;
-    
     //Telling the system that the player hasn't fired their new power shot
     Overkill_Shot[weapon] 	= 2; 
     
@@ -179,3 +180,8 @@ public Action:ApplyBonusDamage(Handle:timer, any:weapon)
     Overkill_EnemyHealth[weapon] = 0;
 }
 
+public Action:RemoveBonusDamage(Handle:timer, any:weapon)
+{
+	//Resets bonus damage
+	Overkill_BonusDmg[weapon] = 0.0;
+}
