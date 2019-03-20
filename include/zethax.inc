@@ -96,7 +96,7 @@ stock GetClientMaxHealth(client)
 //@param client				The client you want to get the weapon of
 stock GetActiveWeapon(client)
 {
-	if (!IsValidClient(client))return -1;
+	if (!IsClientConnected(client) || !IsClientInGame(client))return -1;
 	if(GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon") > -1)
 	{
 		return GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
@@ -187,12 +187,16 @@ stock SetClip_Weapon(weapon, newClip)
 }
 
 //Sets the ammo of a weapon.
-stock SetAmmo_Weapon(weapon, newAmmo)
+stock SetAmmo_Weapon(client, weapon, newAmmo)
 {
-	new owner = GetEntPropEnt(weapon, Prop_Send, "m_hOwnerEntity");
-	if (owner == -1) return;
-	if (weapon == -1)return;
-	SetEntProp(owner, Prop_Data, "m_iAmmo", newAmmo, 4, 3);
+	if(!IsValidClient(client))
+		return -1;
+	if(!IsValidEntity(weapon))
+		return -1;
+	
+	new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1) * 4;
+	new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+	return SetEntData(client, iAmmoTable + iOffset, newAmmo);
 }
 /*
 Deals damage to a specific client through the use of "point_hurt" entities.
@@ -539,7 +543,7 @@ public Action:RemoveParticle(Handle:timer, any:particle) //Chawlz' code
 
 stock GetWeaponSlot(client, weapon)
 {
-	if(!IsValidClient(client)) return -1;
+	if(!IsClientConnected(client) || !IsClientInGame(client)) return -1;
 	
 	for(new i = 0; i < 5; i++)
     {
