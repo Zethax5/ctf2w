@@ -28,6 +28,11 @@ Attributes in this pack:
 		1) Condition ID to add
 		2) Duration of condition
 		Upon drinking: Gain X condition for X seconds
+	
+	-> "addcond on hit"
+		1) Condition ID to add
+		2) Duration of condition
+		On hit: Gain X condition for X seconds
 
 */
 
@@ -43,7 +48,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_addcond_attribs"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "A small pack of attributes that add conditions to the player based on certain conditions"
-#define PLUGIN_VERS "v1.0"
+#define PLUGIN_VERS "v1.1"
 
 #define MAXCONDS 255
 
@@ -72,6 +77,7 @@ public OnPluginStart() {
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 }
 
 new bool:AddcondOnKill[2049];
@@ -90,6 +96,10 @@ new AddcondOnWearer_Condition[MAXPLAYERS + 1][MAXSLOTS + 1][MAXCONDS + 1];
 new bool:AddcondOnDrink[2049];
 new AddcondOnDrink_Condition[2049][MAXCONDS + 1];
 new Float:AddcondOnDrink_Duration[2049][MAXCONDS + 1];
+
+new bool:AddcondOnHit[2049];
+new AddcondOnHit_Condition[2049][MAXCONDS + 1];
+new Float:AddcondOnHit_Duration[2049][MAXCONDS + 1];
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -150,8 +160,36 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		AddcondOnDrink[weapon] = true;
 		action = Plugin_Handled;
 	}
+	else if(StrEqual(attrib, "addcond on hit"))
+	{
+		new String:values[2][10];
+		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
+		
+		AddcondOnHit_Condition[weapon][StringToInt(values[0])] = StringToInt(values[0]);
+		AddcondOnHit_Duration[weapon][StringToInt(values[0])] = StringToFloat(values[1]);
+		
+		AddcondOnHit[weapon] = true;
+		action = Plugin_Handled;
+	}
 	
 	return action;
+}
+
+public OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+{
+	if(attacker > -1 && weapon > -1)
+	{
+		if(AddcondOnHit[weapon])
+		{
+			for (new i = 0; i <= MAXCONDS; i++)
+			{
+				if(AddcondOnHit_Condition[weapon][i] == 0)
+					continue;
+				
+				TF2_AddCondition(attacker, TFCond:AddcondOnHit_Condition[weapon][i], AddcondOnHit_Duration[weapon][i]);
+			}
+		}
+	}
 }
 
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
@@ -274,6 +312,10 @@ public OnEntityDestroyed(ent)
 	AddcondOnDrink[ent] = false;
 	AddcondOnDrink_Duration[ent] = ClearDur;
 	AddcondOnDrink_Condition[ent] = ClearConds;
+	
+	AddcondOnHit[ent] = false;
+	AddcondOnHit_Duration[ent] = ClearDur;
+	AddcondOnHit_Condition[ent] = ClearConds;
 }
 
 public CW3_OnWeaponRemoved(slot, client)
