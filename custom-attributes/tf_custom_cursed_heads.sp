@@ -24,6 +24,8 @@ Attributes in this pack:
 #define PLUGIN_DESC "Adds an attribute associated with gathering heads that act as resurrections"
 #define PLUGIN_VERS "v0.0"
 
+#define SOUND_USEHEAD "player/souls_receive1.wav"
+
 public Plugin:my_info = {
   
 	name        = PLUGIN_NAME,
@@ -44,6 +46,11 @@ public OnPluginStart() {
   
 		OnClientPutInServer(i);
 	}
+}
+
+public OnMapStart()
+{
+	PrecacheSound(SOUND_USEHEAD, true);
 }
 
 public OnClientPutInServer(client)
@@ -89,22 +96,34 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
 {
 	new Action:action;
-	if(IsValidClient(attacker) && IsValidClient(victim))
+	if(IsValidClient(victim))
 	{
 		new wep = GetPlayerWeaponSlot(victim, 2);
 		new health = GetClientHealth(victim);
 		new threshold = RoundToCeil(GetClientMaxHealth(victim) * CursedHeads_Threshold[wep]);
 		if(wep > -1 && CursedHeads_Heads[wep] > 0 && health - RoundToCeil(damage) <= threshold)
 		{
-			CursedHeads_Heads[wep]--;
-			CursedHeads_Tick[wep] = GetEngineTime();
-			TF2_AddCondition(victim, TFCond_MarkedForDeath, CursedHeads_Duration[wep], attacker);
-			damage = health - 2.0;
-			SetEntityHealth(victim, RoundFloat(GetClientMaxHealth(victim) * 0.5 + damage));
-			action = Plugin_Changed;
+			if(GetEngineTime() >= CursedHeads_Tick[wep] + CursedHeads_Duration[wep])
+			{
+				//Uses up one head, and prevents players from gathering or using more heads temporarily
+				CursedHeads_Heads[wep]--;
+				CursedHeads_Tick[wep] = GetEngineTime();
+				
+				//Marks player for death
+				//Using a timer here to prevent damage from becoming a minicrit
+				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHARGE);
+				
+				//Curb damage to prevent the player from dying
+				damage = health - 2.0;
+				//Restores player health to 50%
+				SetEntityHealth(victim, RoundFloat(GetClientMaxHealth(victim) * 0.5 + damage));
+				action = Plugin_Changed;
+			}
 		}
 	}
-	LastWeaponHurtWith[attacker] = weapon;
+	if(IsValidClient(attacker))
+		LastWeaponHurtWith[attacker] = weapon;
+	
 	return action;
 }
 
@@ -137,4 +156,11 @@ public OnEntityDestroyed(ent)
 	CursedHeads_Duration[ent] = 0.0;
 	CursedHeads_Tick[ent] = 0.0;
 	CursedHeads_Threshold[ent] = 0.0;
+}
+
+public Action:MarkPlayerForDeath(Handle:timer, any:client)
+{
+	new wep = GetPlayerWeaponSlot(client, 2);
+	if(wep > -1 && CursedHeads[wep])
+		TF2_AddCondition(client, TFCond_MarkedForDeath, CursedHeads_Duration[wep]);
 }
