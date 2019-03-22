@@ -1,5 +1,9 @@
 /*
 
+Previous version was horribly inefficient for the server.
+Ate CPU resources like woah.
+Gonna rewrite it to be nicer to the server.
+
 Created by: Zethax
 Document created on: March 21st, 2019
 Last edit made on: March 21st, 2019
@@ -54,6 +58,12 @@ new bool:DmgChargeUber[2049];
 new Float:DmgChargeUber_Medic[2049];
 new Float:DmgChargeUber_Patient[2049];
 new Float:DmgChargeUber_Reduction[2049];
+new Float:DmgChargesUber_DmgTicks[2049];
+new Float:DmgChargesUber_DmgTickDelay[2049];
+
+
+new Float:DmgDealt[MAXPLAYERS + 1];
+new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -81,10 +91,61 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
+{
+	if(IsValidClient(attacker))
+	{
+		//The way the original system dealt with charging the medigun based on patient damage
+		//required indexing all players and checking for which one was healing the attacker.
+		//This isn't inherently bad with burst damage weapons, since it only triggers maybe twice a second.
+		//But constant damage weapons were stressful on the server.
+		//So, instead we'll be storing damage the attacker has dealt for use later.
+		DmgDealt[attacker] += damage;
+		
+		new secondary = GetPlayerWeaponSlot(attacker, 1);
+		if(secondary > -1 && DmgChargeUber[secondary])
+		{
+			new Float:ubercharge = GetEntPropFloat(secondary, Prop_Send, "m_flChargeLevel");
+			new Float:charge = damage * DmgChargeUber_Medic[secondary] / 100.0;
+			new Float:reduction = 1.0 - (DmgChargeUber_Reduction[secondary] * DmgChargesUber_DmgTicks[secondary]);
+			charge *= reduction;
+			ubercharge += charge;
+			if(ubercharge > 1.0)
+				ubercharge = 1.0;
+			if(ubercharge < 0.0)
+				ubercharge = 0.0;
+			SetEntPropFloat(secondary, Prop_Send, "m_flChargeLevel", ubercharge);
+			DmgChargesUber_DmgTicks[secondary] += 0.1;
+			DmgChargesUber_DmgTickDelay[secondary] = GetEngineTime();
+		}
+	}
+}
+
+public OnClientPreThink(client)
+{
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetActiveWeapon(client);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(GetEngineTime() >= LastTick[client] + 0.1)
+	{
+		DmgChargesUber_PreThink(client, weapon);
+		LastTick[client] = GetEngineTime();
+	}
+}
+
+
+
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
-	
+	DmgChargeUber[ent] = false;
+	DmgChargeUber_Medic[ent] = 0.0;
+	DmgChargeUber_Patient[ent] = 0.0;
+	DmgChargeUber_Reduction[ent] = 0.0;
 }
