@@ -72,6 +72,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+{
+	new Action:action;
+	
+	return action;
+}
+
 public OnEntityDestroyed(ent)
 {
 	if(ent < 0 || ent > 2048)
