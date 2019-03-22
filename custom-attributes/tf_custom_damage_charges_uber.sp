@@ -6,11 +6,15 @@ Gonna rewrite it to be nicer to the server.
 
 Created by: Zethax
 Document created on: March 21st, 2019
-Last edit made on: March 21st, 2019
-Current version: v0.0
+Last edit made on: March 22nd, 2019
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "damage charges uber"
+		1) Multiplier for Medic damage to be converted to ubercharge
+		2) Multiplier for patient damage to be converted to ubercharge
+		3) Maximum reduction multiplier for continuous damage
+		Continuous damage includes but isn't limited to Heavy's Minigun, Pyro's Flamethrower, Medic's Syringe Gun...
 
 */
 
@@ -26,7 +30,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_damage_charges_uber"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which allows damage to charge Medigun Ubercharge."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
@@ -60,7 +64,6 @@ new Float:DmgChargeUber_Patient[2049];
 new Float:DmgChargeUber_Reduction[2049];
 new Float:DmgChargesUber_DmgTicks[2049];
 new Float:DmgChargesUber_DmgTickDelay[2049];
-
 
 new Float:DmgDealt[MAXPLAYERS + 1];
 new Float:LastTick[MAXPLAYERS + 1];
@@ -137,7 +140,32 @@ public OnClientPreThink(client)
 	}
 }
 
-
+void DmgChargesUber_PreThink(client, weapon)
+{
+	if(DmgChargesUber[weapon])
+	{
+		new patient = GetMediGunPatient(client);
+		if(IsValidClient(patient) && DmgDealt[patient] > 0.0)
+		{
+			new Float:damage = DmgDealt[patient];
+			new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
+			new Float:addCharge = damage * DmgChargesUber_Patient[weapon] / 100.0;
+			new Float:reduction = 1.0 - (DmgChargesUber_Reduction[weapon] * DmgChargesUber_DmgTicks[weapon]);
+			addCharge *= reduction;
+			ubercharge += addCharge;
+			if(ubercharge > 1.0)
+				ubercharge = 1.0;
+			if(ubercharge < 0.0)
+				ubercharge = 0.0;
+			SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
+		}
+		
+		if(GetEngineTime() >= DmgChargesUber_DmgTickDelay[weapon] + 0.5)
+			DmgChargesUber_DmgTicks[weapon] = 0.0;
+	}
+	
+	DmgDealt[client] = 0.0;
+}
 
 public OnEntityDestroyed(ent)
 {
