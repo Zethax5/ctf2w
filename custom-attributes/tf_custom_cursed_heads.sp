@@ -1,12 +1,17 @@
 /*
 
 Created by: Zethax
-Document created on: March 21th, 2019
-Last edit made on: March 21th, 2019
-Current version: v0.0
+Document created on: March 21st, 2019
+Last edit made on: March 22nd, 2019
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "merasmus cursed my heads"
+		1) Maximum number of heads that can be accumulated
+		2) How long penalties last after using a head
+		3) Health threshold to trigger using a head. Defaults to 20% of max health, so can be left empty.
+		Penalties after using a head include mark for death and inability to gain or use another head temporarily.
+		Can save the Demoman from fatal damage.
 
 */
 
@@ -22,7 +27,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_cursed_heads"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute associated with gathering heads that act as resurrections"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 #define SOUND_USEHEAD "player/souls_receive1.wav"
 
@@ -114,7 +119,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHARGE);
 				
 				//Curb damage to prevent the player from dying
-				damage = health - 2.0;
+				damage = float(health) - 2.0;
 				//Restores player health to 50%
 				SetEntityHealth(victim, RoundFloat(GetClientMaxHealth(victim) * 0.5 + damage));
 				action = Plugin_Changed;
