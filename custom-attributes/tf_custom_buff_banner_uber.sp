@@ -1,12 +1,14 @@
 /*
 
 Created by: Zethax
-Document created on: January 11th, 2019
-Last edit made on: January 11th, 2019
-Current version: v0.0
+Document created on: March 23rd, 2019
+Last edit made on: March 23rd, 2019
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "ubercharge is buff banners"
+		Any value activates
+		Replaces standard ubercharge with all 3 buff banner effects.
 
 */
 
@@ -23,7 +25,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_buff_banner_uber"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which replaces the Medic's ubercharge with all 3 buff banners"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
@@ -113,8 +115,8 @@ void BuffBannerUber_PreThink(client, weapon)
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
 	BuffBannerUber[ent] = false;
 }
