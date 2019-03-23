@@ -76,6 +76,25 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	new Action:action;
 	
+	if(IsValidClient(victim))
+	{
+		new wep = GetActiveWeapon(victim);
+		if(wep > -1 && UberResistsDmg[wep] && (damagetype & DMG_CRIT) != DMG_CRIT)
+		{
+			new Float:ubercharge = GetEntPropFloat(wep, Prop_Send, "m_flChargeLevel");
+			if(ubercharge > 0.0)
+			{
+				new Float:removeCharge = (damage * UberResistsDmg_Resistance[wep]) / 100.0;
+				damage *= 1.0 - UberResistsDmg_Resistance[wep];
+				ubercharge -= removeCharge;
+				if(ubercharge > 0.0)
+					ubercharge = 0.0;
+				SetEntPropFloat(wep, Prop_Send, "m_flChargeLevel", ubercharge);
+				action = Plugin_Changed;
+			}
+		}
+	}
+	
 	return action;
 }
 
