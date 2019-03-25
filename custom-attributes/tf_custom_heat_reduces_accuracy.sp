@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: March 23rd, 2019
 Last edit made on: March 23rd, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
 	-> "heat decreases accuracy"
@@ -27,7 +27,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_heat_reduces_accuracy"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which reduces accuracy over time"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
