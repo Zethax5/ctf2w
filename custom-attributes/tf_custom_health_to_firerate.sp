@@ -90,7 +90,8 @@ public OnClientPreThink(client)
 	
 	if(GetEngineTime() >= LastTick[client] + 0.1)
 	{
-		TF2Attrib_SetByName(weapon, "fire rate penalty HIDDEN", 1.0 - (HealthToFireRate_MaxMult[weapon] * (GetClientHealth(client) / GetClientMaxHealth(client))));
+		new Float:mult = HealthToFireRate_MaxMult[weapon] * (1.0 - (GetClientHealth(client) / GetClientMaxHealth(client)));
+		TF2Attrib_SetByName(weapon, "fire rate penalty HIDDEN", 1.0 - mult);
 	}
 }
 
