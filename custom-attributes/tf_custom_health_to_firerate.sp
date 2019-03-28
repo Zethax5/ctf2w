@@ -3,10 +3,11 @@
 Created by: Zethax
 Document created on: March 27th, 2019
 Last edit made on: March 27th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "fire rate increases as health decreases"
+		1) Maximum fire rate at 1 hp
 
 */
 
@@ -23,7 +24,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_health_to_firerate"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which increases fire rate as health decreases"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
