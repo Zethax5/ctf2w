@@ -64,8 +64,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
 	
 }
