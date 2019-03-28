@@ -51,7 +51,14 @@ public OnClientPutInServer(client)
 
 new bool:SpeedOnKill[2049];
 new Float:SpeedOnKill_FireSpd[2049];
-new Float:SpeedOnKill_DmgPen[2049];
+new Float:SpeedOnKill_BlastRad[2049];
+new Float:SpeedOnKill_ReloadSpd[2049];
+new Float:SpeedOnKill_ProjectileSpd[2049];
+new SpeedOnKill_MaxStacks[2049];
+new SpeedOnKill_Stacks[2049];
+new Float:SpeedOnKill_FastDecay[2049];
+new Float:SpeedOnKill_Decay[2049];
+new Float:SpeedOnKill_Tick[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -68,7 +75,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		new String:values[7][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
-		
+		SpeedOnKill_FireSpd[weapon] = StringToFloat(values[0]);
+		SpeedOnKill_ReloadSpd[weapon] = StringToFloat(values[1]);
+		SpeedOnKill_BlastRad[weapon] = StringToFloat(values[2]);
+		SpeedOnKill_ProjectileSpd[weapon] = StringToFloat(values[3]);
+		SpeedOnKill_MaxStacks[weapon] = StringToInt(values[4]);
+		SpeedOnKill_Decay[weapon] = StringToFloat(values[5]);
+		SpeedOnKill_FastDecay[weapon] = StringToInt(values[6]);
 		
 		SpeedOnKill[weapon] = true;
 		action = Plugin_Handled;
@@ -82,5 +95,12 @@ public OnEntityDestroyed(ent)
 	if(ent < 0 || ent > 2048)
 		return;
 	
-	
+	SpeedOnKill[ent] = false;
+	SpeedOnKill_FireSpd[ent] = 0.0;
+	SpeedOnKill_ReloadSpd[ent] = 0.0;
+	SpeedOnKill_BlastRad[ent] = 0.0;
+	SpeedOnKill_ProjectileSpd[ent] = 0.0;
+	SpeedOnKill_MaxStacks[ent] = 0;
+	SpeedOnKill_Decay[ent] = 0.0;
+	SpeedOnKill_FastDecay[ent] = 0.0;
 }
