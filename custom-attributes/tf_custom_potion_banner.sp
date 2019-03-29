@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: March 29th, 2019
 Last edit made on: March 29th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
 	-> "mod soldier buff is random spell"
@@ -31,7 +31,10 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_potion_banner"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which replaces the typical buff banner with a random buff for the user."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
+
+new Handle:hudText_Rage;
+new Handle:hudText_Potions;
 
 public Plugin:my_info = {
   
@@ -54,6 +57,9 @@ public OnPluginStart() {
   
 		OnClientPutInServer(i);
 	}
+	
+	hudText_Rage = CreateHudSynchronizer();
+	hudText_Potions = CreateHudSynchronizer();
 }
 
 public OnClientPutInServer(client)
@@ -64,11 +70,14 @@ public OnClientPutInServer(client)
 
 new bool:SpellBanner[2049];
 new Float:SpellBanner_Duration[2049];
+new Float:SpellBanner_Tick[2049];
 new Float:SpellBanner_RageCap[2049];
 new Float:SpellBanner_Rage[2049];
 new SpellBanner_MaxPotions[2049];
 new SpellBanner_Potions[2049];
 new SpellBanner_Buffs[2049][10];
+
+new Float:LastTick[MAXLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -130,10 +139,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	if(attacker)
+	if(attacker && attacker != victim)
 	{
 		new secondary = GetPlayerWeaponSlot(attacker, 1);
-		if(secondary > -1 && SpellBanner[secondary])
+		if(secondary > -1 && SpellBanner[secondary] && GetEngineTime() >= SpellBanner_Tick[secondary] + SpellBanner_Duration[secondary])
 		{
 			SpellBanner_Rage[secondary] += damage;
 			if(SpellBanner_Rage[secondary] > SpellBanner_RageCap[secondary])
@@ -154,12 +163,51 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 
 public OnClientPreThink(client)
 {
-
+	if(!IsValidClient(client))
+		return;
+	
+	new weapon = GetPlayerWeaponSlot(client, 1);
+	if(weapon < 0 || weapon > 2048)
+		return;
+	
+	if(!SpellBanner[weapon])
+		return;
+	
+	if(GetEngineTime() >= LastTick[client] + 0.1)
+	{
+		if(SpellBanner_Charges[weapon] > 0 && GetEngineTime() >= SpellBanner_Tick[weapon] + SpellBanner_Duration[weapon])
+			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
+		else
+			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 0.0);
+		
+		//Displays rage
+		SetHudTextParams(-1.0, 0.7, 0.2, 255, 255, 255, 255);
+		ShowSyncHudText(client, hudText_Rage, "Rage: %i%% / 100%%", RoundFloat((SpellBanner_Rage[weapon] / SpellBanner_RageCap[weapon]) * 100.0));
+		
+		//Displays potions
+		SetHudTextParams(-1.0, 0.6, 0.2, 255, 255, 255, 255);
+		ShowSyncHudText(client, hudText_Potions, "Potions: %i / %i", SpellBanner_Potions[weapon], SpellBanner_MaxPotions[weapon]);
+		
+		LastTick[client] = GetEngineTime();
+	}
 }
 
 public OnBuffDeployed(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	if(IsValidClient(client))
+	{
+		new weapon = GetPlayerWeaponSlot(client, 1);
+		if(weapon > -1 && SpellBanner[weapon])
+		{
+			new choice = GetRandomInt(0, 9);
+			TF2_AddCondition(client, TFCond:SpellBanner_Conds[weapon][choice], SpellBanner_Duration[weapon]);
+			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 0.0);
+			
+			SpellBanner_Potions[weapon]--;
+			SpellBanner_Tick[weapon] = GetEngineTime();
+		}
+	}
 }
 
 public OnEntityDestroyed(ent)
