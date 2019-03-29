@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: March 28th, 2019
 Last edit made on: March 28th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
 	-> "ubercharge is revive"
@@ -13,7 +13,13 @@ Attributes in this pack:
 		4) Max health to restore to medic on ubercharge
 		5) Max health to restore to medic on MANUAL ubercharge
 		6) Patient health threshold for automatic ubercharge to trigger
-		Automatic uber can save a patient from fatal damage.
+		
+		If Medic has enough Ubercharge, and the patient's health goes below the given threshold,
+		the medigun will automatically trigger an Ubercharge. This restores a given amount of health
+		to the patient and the Medic should he be wounded, and drains the Medic's Ubercharge.
+		Automatic Ubercharges can save the patient from fatal damage.
+		Manual Ubercharges can be triggered via alt-fire, granting instant health restoration to the
+		Medic and the patient.
 
 */
 
@@ -29,7 +35,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_resurrection_uber"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which replaces ubercharge with a life-saver"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 #define SOUND_REVIVE "mvm/mvm_revive.wav"
 
