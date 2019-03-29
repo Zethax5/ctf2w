@@ -67,6 +67,7 @@ public OnMapStart()
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
 new bool:ReviveUber[2049];
@@ -79,6 +80,7 @@ new Float:ReviveUber_Threshold[2049];
 new Float:ReviveUber_UseDelay[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
+new Healer[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -131,18 +133,41 @@ public OnClientPreThink(client)
 		SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", 0.99);
 }
 
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+{
+	if(attacker && victim)
+	{
+		if(Healer[victim] > 0)
+		{
+			new healer = Healer[victim];
+			new medigun = GetActiveWeapon[healer];
+			if(medigun > -1 && ReviveUber[medigun])
+			{
+				new ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
+				if(ubercharge >= ReviveUber_AutoDrain[weapon])
+				{
+					new health = GetClientHealth(victim);
+					if(damage >= health)
+					{
+						damage = float(health) - 1.0;
+						return Plugin_Changed;
+					}
+				}
+			}
+		}
+	}
+	return Plugin_Continue;
+}
+
 void ReviveUber_PreThink(client, weapon)
 {
 	new patient = GetMediGunPatient(client);
 	new buttons = GetClientButtons(client);
-	new TFCond:buddha = 70;
 	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	if(patient > -1)
 	{
 		if(ubercharge >= ReviveUber_AutoDrain[weapon])
 		{
-			TF2_AddCondition(patient, buddha, 0.2);
-			
 			new maxMedicHealth = GetClientMaxHealth(client);
 			new maxPatientHealth = GetClientMaxHealth(patient);
 			new medicHealth = GetClientHealth(client);
@@ -164,6 +189,7 @@ void ReviveUber_PreThink(client, weapon)
 				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge - ReviveUber_AutoDrain[weapon]);
 			}
 		}
+		Healer[patient] = client;
 		
 	}
 	if((buttons & IN_ATTACK2) == IN_ATTACK2 && GetEngineTime() >= ReviveUber_UseDelay[weapon] + 1.0)
