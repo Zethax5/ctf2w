@@ -96,7 +96,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		SpeedOnKill_ProjectileSpd[weapon] = StringToFloat(values[3]);
 		SpeedOnKill_MaxStacks[weapon] = StringToInt(values[4]);
 		SpeedOnKill_Decay[weapon] = StringToFloat(values[5]);
-		SpeedOnKill_FastDecay[weapon] = StringToInt(values[6]);
+		SpeedOnKill_FastDecay[weapon] = StringToFloat(values[6]);
 		
 		SpeedOnKill[weapon] = true;
 		action = Plugin_Handled;

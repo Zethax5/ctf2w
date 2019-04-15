@@ -77,7 +77,7 @@ new SpellBanner_MaxPotions[2049];
 new SpellBanner_Potions[2049];
 new SpellBanner_Buffs[2049][10];
 
-new Float:LastTick[MAXLAYERS + 1];
+new Float:LastTick[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -175,7 +175,7 @@ public OnClientPreThink(client)
 	
 	if(GetEngineTime() >= LastTick[client] + 0.1)
 	{
-		if(SpellBanner_Charges[weapon] > 0 && GetEngineTime() >= SpellBanner_Tick[weapon] + SpellBanner_Duration[weapon])
+		if(SpellBanner_Potions[weapon] > 0 && GetEngineTime() >= SpellBanner_Tick[weapon] + SpellBanner_Duration[weapon])
 			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 100.0);
 		else
 			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 0.0);
@@ -201,7 +201,7 @@ public OnBuffDeployed(Handle:event, const String:name[], bool:dontBroadcast)
 		if(weapon > -1 && SpellBanner[weapon])
 		{
 			new choice = GetRandomInt(0, 9);
-			TF2_AddCondition(client, TFCond:SpellBanner_Conds[weapon][choice], SpellBanner_Duration[weapon]);
+			TF2_AddCondition(client, TFCond:SpellBanner_Buffs[weapon][choice], SpellBanner_Duration[weapon]);
 			SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 0.0);
 			
 			SpellBanner_Potions[weapon]--;

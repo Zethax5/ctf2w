@@ -62,8 +62,8 @@ new bool:DmgChargeUber[2049];
 new Float:DmgChargeUber_Medic[2049];
 new Float:DmgChargeUber_Patient[2049];
 new Float:DmgChargeUber_Reduction[2049];
-new Float:DmgChargesUber_DmgTicks[2049];
-new Float:DmgChargesUber_DmgTickDelay[2049];
+new Float:DmgChargeUber_DmgTicks[2049];
+new Float:DmgChargeUber_DmgTickDelay[2049];
 
 new Float:DmgDealt[MAXPLAYERS + 1];
 new Float:LastTick[MAXPLAYERS + 1];
@@ -110,7 +110,7 @@ public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, 
 		{
 			new Float:ubercharge = GetEntPropFloat(secondary, Prop_Send, "m_flChargeLevel");
 			new Float:charge = damage * DmgChargeUber_Medic[secondary] / 100.0;
-			new Float:reduction = 1.0 - (DmgChargeUber_Reduction[secondary] * DmgChargesUber_DmgTicks[secondary]);
+			new Float:reduction = 1.0 - (DmgChargeUber_Reduction[secondary] * DmgChargeUber_DmgTicks[secondary]);
 			charge *= reduction;
 			ubercharge += charge;
 			if(ubercharge > 1.0)
@@ -118,8 +118,8 @@ public OnTakeDamageAlive(victim, attacker, inflictor, Float:damage, damagetype, 
 			if(ubercharge < 0.0)
 				ubercharge = 0.0;
 			SetEntPropFloat(secondary, Prop_Send, "m_flChargeLevel", ubercharge);
-			DmgChargesUber_DmgTicks[secondary] += 0.1;
-			DmgChargesUber_DmgTickDelay[secondary] = GetEngineTime();
+			DmgChargeUber_DmgTicks[secondary] += 0.1;
+			DmgChargeUber_DmgTickDelay[secondary] = GetEngineTime();
 		}
 	}
 }
@@ -135,22 +135,22 @@ public OnClientPreThink(client)
 	
 	if(GetEngineTime() >= LastTick[client] + 0.1)
 	{
-		DmgChargesUber_PreThink(client, weapon);
+		DmgChargeUber_PreThink(client, weapon);
 		LastTick[client] = GetEngineTime();
 	}
 }
 
-void DmgChargesUber_PreThink(client, weapon)
+void DmgChargeUber_PreThink(client, weapon)
 {
-	if(DmgChargesUber[weapon])
+	if(DmgChargeUber[weapon])
 	{
 		new patient = GetMediGunPatient(client);
 		if(IsValidClient(patient) && DmgDealt[patient] > 0.0)
 		{
 			new Float:damage = DmgDealt[patient];
 			new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
-			new Float:addCharge = damage * DmgChargesUber_Patient[weapon] / 100.0;
-			new Float:reduction = 1.0 - (DmgChargesUber_Reduction[weapon] * DmgChargesUber_DmgTicks[weapon]);
+			new Float:addCharge = damage * DmgChargeUber_Patient[weapon] / 100.0;
+			new Float:reduction = 1.0 - (DmgChargeUber_Reduction[weapon] * DmgChargeUber_DmgTicks[weapon]);
 			addCharge *= reduction;
 			ubercharge += addCharge;
 			if(ubercharge > 1.0)
@@ -160,8 +160,8 @@ void DmgChargesUber_PreThink(client, weapon)
 			SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge);
 		}
 		
-		if(GetEngineTime() >= DmgChargesUber_DmgTickDelay[weapon] + 0.5)
-			DmgChargesUber_DmgTicks[weapon] = 0.0;
+		if(GetEngineTime() >= DmgChargeUber_DmgTickDelay[weapon] + 0.5)
+			DmgChargeUber_DmgTicks[weapon] = 0.0;
 	}
 	
 	DmgDealt[client] = 0.0;

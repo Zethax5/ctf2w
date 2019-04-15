@@ -175,7 +175,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-public OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
+public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
 	if(attacker > -1 && weapon > -1)
 	{
@@ -190,6 +190,7 @@ public OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &
 			}
 		}
 	}
+	return Plugin_Continue;
 }
 
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)

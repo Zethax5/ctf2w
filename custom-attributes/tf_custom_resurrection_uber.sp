@@ -140,16 +140,16 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		if(Healer[victim] > 0)
 		{
 			new healer = Healer[victim];
-			new medigun = GetActiveWeapon[healer];
+			new medigun = GetActiveWeapon(healer);
 			if(medigun > -1 && ReviveUber[medigun])
 			{
-				new ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
+				new Float:ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
 				if(ubercharge >= ReviveUber_AutoDrain[weapon])
 				{
 					new health = GetClientHealth(victim);
 					if(damage >= health)
 					{
-						damage = float(health) - 1.0;
+						damage = float(health) - 2.0;
 						return Plugin_Changed;
 					}
 				}
@@ -206,7 +206,7 @@ void ReviveUber_PreThink(client, weapon)
 					healing = maxMedicHealth - medicHealth;
 				
 				SetEntityHealth(client, medicHealth + healing);
-				TF2_AddCondition(client, buddha, 5.0);
+				TF2_AddCondition(client, TFCond:70, 5.0);
 				
 				EmitSoundToAll(SOUND_REVIVE, client);
 				

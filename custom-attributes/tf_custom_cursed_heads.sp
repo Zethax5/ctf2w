@@ -116,7 +116,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				
 				//Marks player for death
 				//Using a timer here to prevent damage from becoming a minicrit
-				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHARGE);
+				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHANGE);
 				
 				//Curb damage to prevent the player from dying
 				damage = float(health) - 2.0;
@@ -134,7 +134,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new attacker = GetClientOfUserId(GetEventInt(event, "attacker));
+	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	if(IsValidClient(attacker))
 	{
 		new weapon = LastWeaponHurtWith[attacker];

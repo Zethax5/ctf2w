@@ -91,7 +91,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		TF2Attrib_SetByName(weapon, "mod max primary clip override", -1.0);
 		TF2Attrib_SetByName(weapon, "hidden secondary max ammo penalty", 0.0);
 		SetClip_Weapon(weapon, TurnaboutAmmo_Max[weapon]);
-		SetAmmo_Weapon(weapon, TurnaboutAmmo_Max[weapon]);
+		SetAmmo_Weapon(client, weapon, TurnaboutAmmo_Max[weapon]);
 		
 		TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
 		TurnaboutAmmo[weapon] = true;
@@ -160,7 +160,7 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 					TurnaboutAmmo_Ammo[primary] = TurnaboutAmmo_Max[primary];
 				
 				SetClip_Weapon(primary, TurnaboutAmmo_Ammo[primary]);
-				SetAmmo_Weapon(primary, TurnaboutAmmo_Ammo[primary]);
+				SetAmmo_Weapon(attacker, primary, TurnaboutAmmo_Ammo[primary]);
 			}
 		}
 		if(weapon > -1 && TurnaboutAmmo[weapon])
@@ -202,7 +202,7 @@ void TurnaboutAmmo_PostThink(client, weapon)
 	if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
 		TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
 	
-	SetAmmo_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
+	SetAmmo_Weapon(client, weapon, TurnaboutAmmo_Ammo[weapon]);
 	SetClip_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
 	
 	LastTick[client] = GetEngineTime();

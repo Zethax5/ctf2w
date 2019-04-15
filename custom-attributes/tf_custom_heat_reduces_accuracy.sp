@@ -110,7 +110,7 @@ public OnClientPostThink(client)
 	}
 }
 
-void HeatAccuracy_PostThink(client, weapon);
+void HeatAccuracy_PostThink(client, weapon)
 {
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
