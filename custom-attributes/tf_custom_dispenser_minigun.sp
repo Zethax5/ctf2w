@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
 Last edit made on: Tuesday, January 29th, 2019
-Current version: v1.1
+Current version: v2.0
 
 Attributes in this pack:
 	- "dispenser minigun main"
@@ -49,7 +49,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "Dispenser Minigun"
 #define PLUGIN_DESC "Creates the attributes associated with the dispenser minigun"
 #define PLUGIN_AUTH "Zethax"
-#define PLUGIN_VERS "v1.1"
+#define PLUGIN_VERS "v2.0"
 
 #define SOUND_DISPENSER_HEAL "weapons/dispenser_heal.wav"
 
