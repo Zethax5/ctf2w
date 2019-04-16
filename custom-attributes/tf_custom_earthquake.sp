@@ -81,8 +81,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
-public CW3_OnWeaponRemoved(ent)
+public CW3_OnWeaponRemoved(slot, client)
 {
-	
-	
+	Earthquake[client][slot] = false;
+	Earthquake_Radius[client][slot] = 0.0;
+	Earthquake_Damage[client][slot] = 0.0;
+	Earthquake_Falloff[client][slot] = 0.0;
+	Earthquake_KnockbackMult[client][slot] = 0.0;
+	Earthquake_WhileActive[client][slot] = false;
 }
