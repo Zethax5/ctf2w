@@ -34,7 +34,10 @@ public Plugin:my_info = {
 };
 
 public OnPluginStart() {
- 
+ 	
+	HookEvent("rocket_jump_landed", OnBlastJumpLanded);
+	HookEvent("sticky_jump_landed", OnBlastJumpLanded);
+	
 	for(new i = 1 ; i < MaxClients ; i++)
 	{
 		if(!IsValidClient(i))
@@ -93,6 +96,17 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	return action;
 }
 
+public Action:OnBlastJumpLanded(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	
+	if(!IsValidClient(client))
+		return Plugin_Continue;
+	
+	new primary = 1;
+	new slot = GetClientSlot
+}
+
 public CW3_OnWeaponRemoved(slot, client)
 {
 	Earthquake[client][slot] = false;
@@ -101,4 +115,27 @@ public CW3_OnWeaponRemoved(slot, client)
 	Earthquake_Falloff[client][slot] = 0.0;
 	Earthquake_KnockbackMult[client][slot] = 0.0;
 	Earthquake_WhileActive[client][slot] = false;
+	Earthquake_TriggerOnFallDamage[client][slot] = false;
+}
+
+stock GetClientSlot(client)
+{
+	if(!Client_IsValid(client)) return -1;
+	if(!IsPlayerAlive(client)) return -1;
+	
+	new slot = GetWeaponSlot(client, Client_GetActiveWeapon(client));
+	return slot;
+}
+stock GetWeaponSlot(client, weapon)
+{
+	if(!Client_IsValid(client)) return -1;
+	
+	for(new i = 0; i < MAXSLOTS; i++)
+	{
+		if(weapon == GetPlayerWeaponSlot(client, i))
+		{
+			return i;
+		}
+	}
+	return -1;
 }
