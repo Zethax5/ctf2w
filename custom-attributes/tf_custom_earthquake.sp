@@ -118,6 +118,11 @@ public CW3_OnWeaponRemoved(slot, client)
 	Earthquake_TriggerOnFallDamage[client][slot] = false;
 }
 
+stock CreateEarthquake(client)
+{
+	
+}
+
 stock GetClientSlot(client)
 {
 	if(!Client_IsValid(client)) return -1;
