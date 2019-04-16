@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: January 30th, 2019
 Last edit made on: January 30th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
     - "cloak is leap"
@@ -16,6 +16,12 @@ Attributes in this pack:
 	When cloak is used, the Spy will leap instead of go invisible, throwing him
 	in the direction he's moving and causing him to jump upward.
 	When leap is used, no fall damage is taken and air control is multiplied by Y.
+
+    - "cloak removes negative status
+        Any value activates
+	
+	Will remove negative status effects while cloaked.
+	If "cloak is leap" is on the watch, will only remove negative status if the user has the minimum cloak needed to leap.
 
 */
 
@@ -32,7 +38,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_leap_cloak"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in an attribute that turns Spy's cloak into a leap"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
