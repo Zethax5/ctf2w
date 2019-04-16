@@ -77,6 +77,18 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		Earthquake[client][slot] = true;
 		action = Plugin_Handled;
 	}
+	else if(StrEqual(attrib, "earthquake on fall damage"))
+	{
+		Earthquake_Radius[client][slot] = StringToFloat(values[0]);
+		Earthquake_Damage[client][slot] = StringToFloat(values[1]);
+		Earthquake_Falloff[client][slot] = StringToFloat(values[2]);
+		Earthquake_KnockbackMult[client][slot] = StringToFloat(values[3]);
+		Earthquake_WhileActive[client][slot] = whileActive;
+		
+		Earthquake[client][slot] = true;
+		Earthquake_TriggerOnFallDamage[client][slot] = true;
+		action = Plugin_Handled;
+	}
 	
 	return action;
 }
