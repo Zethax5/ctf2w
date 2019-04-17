@@ -120,6 +120,8 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		new wep = GetPlayerWeaponSlot(attacker, 1);
 		if(wep < 0 || !StoreCritOnHeadshot[wep])
 			wep = GetPlayerWeaponSlot(attacker, 2);
+		if(wep < 0 || !StoreCritOnHeadshot[wep])
+			return Plugin_Continue;
 		if(StoreCritOnHeadshot[wep])
 		{
 			if(damageCustom == TF_CUSTOM_HEADSHOT)
