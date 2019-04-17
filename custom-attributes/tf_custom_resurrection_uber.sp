@@ -144,7 +144,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 			if(medigun > -1 && ReviveUber[medigun])
 			{
 				new Float:ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
-				if(ubercharge >= ReviveUber_AutoDrain[weapon])
+				if(ubercharge >= ReviveUber_AutoDrain[medigun])
 				{
 					new health = GetClientHealth(victim);
 					if(damage >= health)
