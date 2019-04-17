@@ -102,7 +102,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 
 public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
-	LastWeaponHurtWith[attacker] = weapon;
+	if(attacker > -1 && weapon > -1)
+		LastWeaponHurtWith[attacker] = weapon;
 	
 	return Plugin_Continue;
 }
