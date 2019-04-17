@@ -130,12 +130,12 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
-	new weapon = GetActiveWeapon(attacker);
-	if(attacker && weapon > -1)
+	if(attacker)
 	{
+		new weapon = GetActiveWeapon(attacker);
 		new secondary = GetPlayerWeaponSlot(attacker, 1);
 		new melee = GetPlayerWeaponSlot(attacker, 2);
-		if(secondary > -1 && melee > -1)
+		if(secondary > -1 && melee > -1 && weapon > -1)
 		{
 			if(SecondaryKillChargesMelee[weapon])
 				Charged[melee] = true;
