@@ -153,6 +153,8 @@ public OnClientPreThink(client)
 	{
 		SpeedOnKill_Tick[weapon] = GetEngineTime() + SpeedOnKill_FastDecay[weapon];
 		SpeedOnKill_Stacks[weapon]--;
+		if(SpeedOnKill_Stacks[weapon] < 0)
+			SpeedOnKill_Stacks[weapon] = 0;
 	}
 	
 	if(SpeedOnKill_OldStacks[weapon] != SpeedOnKill_Stacks[weapon])

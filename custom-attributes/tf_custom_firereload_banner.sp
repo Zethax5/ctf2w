@@ -75,7 +75,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	{
 		FireReloadBanner[weapon] = true;
 		
-		TF2Attrib_SetByName(weapon, "mod soldier buff type", 1.0);
+		TF2Attrib_SetByName(weapon, "mod soldier buff type", 2.0);
 		TF2Attrib_SetByName(weapon, "kill eater score type", 51.0);
 		action = Plugin_Handled;
 	}
@@ -95,7 +95,7 @@ public OnClientPreThink(client)
 		return;
 	
 	if(Buffed[client])
-		TF2_RemoveCondition(client, TFCond_Buffed);
+		TF2_RemoveCondition(client, TFCond:26);
 	
 	new weapon = GetPlayerWeaponSlot(client, 1);
 	if(weapon < 0 || weapon > 2048)
@@ -126,7 +126,8 @@ void FireReloadBanner_PreThink(client, weapon)
 				if(distance <= buffRadius)
 				{
 					Buffed[target] = true;
-					TF2_AddCondition(target, TFCond:113);
+					TF2_AddCondition(target, TFCond:113, 0.2);
+					TF2_AddCondition(target, TFCond:28, 0.2);
 				}
 			}
 		}

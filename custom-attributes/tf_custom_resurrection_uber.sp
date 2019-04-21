@@ -78,6 +78,7 @@ new Float:ReviveUber_MedicHealthRestore[2049];
 new Float:ReviveUber_MedicHealthRestoreManual[2049];
 new Float:ReviveUber_Threshold[2049];
 new Float:ReviveUber_UseDelay[2049];
+new bool:PatientBackstabbed[MAXPLAYERS + 1];
 
 new Float:LastTick[MAXPLAYERS + 1];
 new Healer[MAXPLAYERS + 1];
@@ -133,7 +134,7 @@ public OnClientPreThink(client)
 		SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", 0.99);
 }
 
-public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3], damageCustom)
 {
 	if(attacker && victim)
 	{
@@ -144,12 +145,15 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 			if(medigun > -1 && ReviveUber[medigun])
 			{
 				new Float:ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
-				if(ubercharge >= ReviveUber_AutoDrain[medigun])
+				if(ubercharge >= ReviveUber_AutoDrain[weapon])
 				{
 					new health = GetClientHealth(victim);
 					if(damage >= health)
 					{
 						damage = float(health) - 2.0;
+						if(damageCustom == TF_CUSTOM_BACKSTAB)
+							PatientBackstabbed[victim] = true;
+						
 						return Plugin_Changed;
 					}
 				}
@@ -186,7 +190,11 @@ void ReviveUber_PreThink(client, weapon)
 				
 				EmitSoundToAll(SOUND_REVIVE, patient);
 				
-				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge - ReviveUber_AutoDrain[weapon]);
+				new Float:mult = 1.0;
+				if(PatientBackstabbed[patient])
+					mult = 2.0;
+				
+				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge - ReviveUber_AutoDrain[weapon] * mult);
 			}
 		}
 		Healer[patient] = client;

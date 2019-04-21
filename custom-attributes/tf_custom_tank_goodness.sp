@@ -9,7 +9,7 @@ I'ma have fun with this!
 Created by: Zethax
 Document created on: February 25th, 2019
 Last edit made on: February 26th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
 	- "tanking grants upgrades"
@@ -34,9 +34,9 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_tank_goodness"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in an attribute associated with a tanky Heavy minigun."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
-#define SOUND_UPGRADE "weapons\vaccinator_charge_tier_04.wav"
+#define SOUND_UPGRADE "weapons/vaccinator_charge_tier_04.wav"
 
 #define TF_COND_DEFENSEBUFF_HIGH TFCond:45
 
@@ -120,7 +120,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	if(attacker)
 	{
-		if(weapon > -1 && TankUpgrades[weapon])
+		if(weapon > -1 && TankUpgrades[weapon] && TankUpgrades_Level[weapon] < 6)
 		{
 			TankUpgrades_Charge[weapon] += damage * TankUpgrades_DealtChargeRate[weapon];
 		}
@@ -128,7 +128,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	if(victim)
 	{
 		new wep = GetActiveWeapon(victim);
-		if(wep > 0 && wep < 2049 && TankUpgrades[wep])
+		if(wep > 0 && wep < 2049 && TankUpgrades[wep] && TankUpgrades_Level[wep] < 6)
 		{
 			TankUpgrades_Charge[wep] += damage * TankUpgrades_TakenChargeRate[wep];
 		}

@@ -48,7 +48,6 @@ public Plugin:my_info = {
 public OnPluginStart() {
  	
 	HookEvent("deploy_buff_banner", OnBuffDeployed);
-
 	
 	for(new i = 1 ; i < MaxClients ; i++)
 	{
@@ -194,7 +193,7 @@ public OnClientPreThink(client)
 
 public OnBuffDeployed(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	new client = GetClientOfUserId(GetEventInt(event, "buff_owner"));
 	if(IsValidClient(client))
 	{
 		new weapon = GetPlayerWeaponSlot(client, 1);

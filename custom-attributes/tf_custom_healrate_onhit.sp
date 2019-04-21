@@ -3,10 +3,14 @@
 Created by: Zethax
 Document created on: January 11th, 2019
 Last edit made on: January 11th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "heal rate on hit"
+		1) Multiplier per stack
+		2) Maximum number of stacks that can be accumulated
+		3) Delay between each stack draining while healing
+		Note: Stacks do not decay while overhealing
 
 */
 
@@ -23,7 +27,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_healrate_onhit"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute that increases heal rate on hit"
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 new Handle:hudText_Client;
 

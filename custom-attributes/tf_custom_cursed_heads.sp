@@ -91,6 +91,9 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		if(strlen(values[2]))
 			CursedHeads_Threshold[weapon] = StringToFloat(values[2]);
 		
+		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
+		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+		
 		CursedHeads[weapon] = true;
 		action = Plugin_Handled;
 	}
@@ -117,6 +120,8 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				//Marks player for death
 				//Using a timer here to prevent damage from becoming a minicrit
 				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHANGE);
+				
+				SetEntProp(wep, Prop_Send, "m_iClip1", CursedHeads_Heads[wep]);
 				
 				//Curb damage to prevent the player from dying
 				damage = float(health) - 2.0;
@@ -145,6 +150,8 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 				CursedHeads_Heads[weapon]++;
 				if(CursedHeads_Heads[weapon] > CursedHeads_MaxHeads[weapon])
 					CursedHeads_Heads[weapon] = CursedHeads_MaxHeads[weapon];
+				
+				SetEntProp(weapon, Prop_Send, "m_iClip1", CursedHeads_Heads[weapon]);
 			}
 		}
 	}

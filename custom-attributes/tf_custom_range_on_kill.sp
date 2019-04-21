@@ -7,9 +7,9 @@ Current version: v1.0
 
 Attributes in this pack:
 	-> "increased melee range on kill"
-		1) Melee range per stack
-		2) Melee bounds per stack
-		3) Maximum stacks
+		1) Melee range
+		2) Melee bounds
+		3) Maximum duration
 
 */
 

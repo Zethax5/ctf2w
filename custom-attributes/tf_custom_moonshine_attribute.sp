@@ -108,14 +108,14 @@ public OnClientPostThink(client)
 	if(!IsValidClient(client))
 		return;
 		
-	new weapon = GetActiveWeapon(client);
+	new weapon = GetPlayerWeaponSlot(client, 2);
 	if(weapon < 0 || weapon > 2048)
 		return;
 	
 	if(!Moonshine[weapon])
 		return;
 	
-	if(GetEngineTime() >= LastTick[client] + 0.1)
+	if(GetEngineTime() >= LastTick[client] + 0.05)
 	{
 		Moonshine_DrinkHandle(client, weapon);
 		LastTick[client] = GetEngineTime();
@@ -129,12 +129,12 @@ void Moonshine_DrinkHandle(client, weapon)
 		Moonshine_Drinking[weapon] = true;
 		Moonshine_DrinkTick[weapon] = GetEngineTime();
 	}
-	else
+	else if(!TF2_IsPlayerInCondition(client, TFCond_Taunting) && Moonshine_Drinking[weapon])
 	{
 		Moonshine_Drinking[weapon] = false;
 	}
 	
-	if(GetEngineTime() >= Moonshine_DrinkTick[weapon] + 2.0)
+	if(Moonshine_Stacks[weapon] > 0 && Moonshine_Drinking[weapon] && GetEngineTime() >= Moonshine_DrinkTick[weapon] + 1.75)
 	{
 		new maxhealth = GetClientMaxHealth(client);
 		new healing = (maxhealth / Moonshine_MaxStacks[weapon]) * Moonshine_Stacks[weapon];

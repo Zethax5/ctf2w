@@ -95,7 +95,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
       
       
       //Enables the rage meter and what not
-      TF2Attrib_SetByName(weapon, "mod soldier buff type", 1.0);
+      TF2Attrib_SetByName(weapon, "mod soldier buff type", 2.0);
       TF2Attrib_SetByName(weapon, "kill eater score type", 51.0);
       
       CleanseBanner[weapon] = true;
@@ -163,7 +163,7 @@ void CleanseBanner_PreThink(client)
 				HealPlayer(healer, client, healing, 1.0);
 				CleanseBanner_ToHeal[client] = false;
 				CleanseBanner_Healer[client] = -1;
-				TF2_RemoveCondition(client, TFCond_Buffed);
+				TF2_RemoveCondition(client, TFCond:26);
 			}
 		}
 	}

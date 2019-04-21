@@ -15,7 +15,7 @@ Attributes in this pack:
 		2) Multiplier for patient damage to be converted to ubercharge
 		3) Maximum reduction multiplier for continuous damage
 		Continuous damage includes but isn't limited to Heavy's Minigun, Pyro's Flamethrower, Medic's Syringe Gun...
-
+		Note: This attribute is capable of extending ubercharge duration via dealing damage while ubercharged
 */
 
 #pragma semicolon 1

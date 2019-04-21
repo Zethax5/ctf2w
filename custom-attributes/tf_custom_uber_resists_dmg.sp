@@ -3,10 +3,11 @@
 Created by: Zethax
 Document created on: March 22nd, 2019
 Last edit made on: March 22nd, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "ubercharge meter resists damage"
+		1) % of damage to reroute to ubercharge
 
 */
 
@@ -22,7 +23,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_uber_resists_dmg"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which redirects damage onto medigun ubercharge."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   

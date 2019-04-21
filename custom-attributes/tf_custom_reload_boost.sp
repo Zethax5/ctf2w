@@ -9,8 +9,6 @@ Attributes in this pack:
 	-> "build reload boost on damage"
 		1) Maximum reload boost that can be obtained
 		2) Maximum damage required to obtain max reload boost
-		3) Amount to drain per drain tick
-		4) Maximum amount of time that can go by before boost starts draining
 
 */
 
@@ -28,8 +26,6 @@ Attributes in this pack:
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which increases reload speed when dealing damage"
 #define PLUGIN_VERS "v1.0"
-
-new Handle:hudText_Client;
 
 public Plugin:my_info = {
   
@@ -49,8 +45,6 @@ public OnPluginStart() {
   
 		OnClientPutInServer(i);
 	}
-	
-	hudText_Client = CreateHudSynchronizer();
 }
 
 public OnClientPutInServer(client)
@@ -64,9 +58,6 @@ new Float:ReloadBoost_Charge[2049];
 new Float:ReloadBoost_OldCharge[2049];
 new Float:ReloadBoost_MaxCharge[2049];
 new Float:ReloadBoost_MaxBoost[2049];
-new Float:ReloadBoost_Drain[2049];
-new Float:ReloadBoost_MaxDelay[2049];
-new Float:ReloadBoost_Delay[2049];
 new ReloadBoost_MaxClip[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
@@ -83,15 +74,13 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	
 	if(StrEqual(attrib, "build reload boost on damage"))
 	{
-		new String:values[5][10];
+		new String:values[3][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		ReloadBoost_MaxBoost[weapon] = StringToFloat(values[0]);
 		ReloadBoost_MaxCharge[weapon] = StringToFloat(values[1]);
-		ReloadBoost_Drain[weapon] = StringToFloat(values[2]);
-		ReloadBoost_MaxDelay[weapon] = StringToFloat(values[3]);
-		if(strlen(values[4]))
-			ReloadBoost_MaxClip[weapon] = StringToInt(values[4]);
+		if(strlen(values[2]))
+			ReloadBoost_MaxClip[weapon] = StringToInt(values[2]);
 		else
 			ReloadBoost_MaxClip[weapon] = GetClip_Weapon(weapon);
 		
@@ -111,8 +100,6 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 		ReloadBoost_Charge[weapon] += damage;
 		if (ReloadBoost_Charge[weapon] > ReloadBoost_MaxCharge[weapon])
 			ReloadBoost_Charge[weapon] = ReloadBoost_MaxCharge[weapon];
-		
-		ReloadBoost_Delay[weapon] = GetEngineTime();
 	}
 	
 	return action;
@@ -138,14 +125,6 @@ void ReloadBoost_PreThink(client, weapon)
 {
 	new Float:boost = ReloadBoost_MaxBoost[weapon] * (ReloadBoost_Charge[weapon] / ReloadBoost_MaxCharge[weapon]);
 	
-	if(GetEngineTime() >= ReloadBoost_Delay[weapon] + ReloadBoost_MaxDelay[weapon])
-	{
-		ReloadBoost_Charge[weapon] -= ReloadBoost_Drain[weapon];
-		if(ReloadBoost_Charge[weapon] < 0.0)
-			ReloadBoost_Charge[weapon] = 0.0;
-			
-		ReloadBoost_Delay[weapon] = GetEngineTime() + (ReloadBoost_MaxDelay[weapon] - 1.0);
-	}
 	if(ReloadBoost_OldCharge[weapon] != ReloadBoost_Charge[weapon])
 	{
 		TF2Attrib_SetByName(weapon, "Reload time decreased", 1.0 - boost);
@@ -154,9 +133,6 @@ void ReloadBoost_PreThink(client, weapon)
 	}
 	if(GetClip_Weapon(weapon) == ReloadBoost_MaxClip[weapon])
 		ReloadBoost_Charge[weapon] = 0.0;
-	
-	SetHudTextParams(-1.0, 0.8, 0.2, 255, 255, 255, 255);
-	ShowSyncHudText(client, hudText_Client, "Reload Speed: %i%% / %i%%", RoundFloat(boost * 100.0), RoundFloat(ReloadBoost_MaxBoost[weapon] * 100.0));
 	
 	LastTick[client] = GetEngineTime();
 }
@@ -168,11 +144,8 @@ public OnEntityDestroyed(ent)
 	
 	ReloadBoost[ent] = false;
 	ReloadBoost_Charge[ent] = 0.0;
-	ReloadBoost_Drain[ent] = 0.0;
-	ReloadBoost_Delay[ent] = 0.0;
 	ReloadBoost_MaxCharge[ent] = 0.0;
 	ReloadBoost_OldCharge[ent] = 0.0;
-	ReloadBoost_MaxDelay[ent] = 0.0;
 	ReloadBoost_MaxBoost[ent] = 0.0;
 	ReloadBoost_MaxClip[ent] = 0;
 }

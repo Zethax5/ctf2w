@@ -58,6 +58,7 @@ public OnClientPutInServer(client)
 
 new bool:ModifyHeadshots[2049];
 new ModifyHeadshots_Modifier[2049];
+new bool:TheBypass[2049];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -123,4 +124,15 @@ public OnEntityDestroyed(ent)
 	
 	ModifyHeadshots[ent] = false;
 	ModifyHeadshots_Modifier[ent] = 0;
+	
+	if(TheBypass[ent])
+	{
+		new owner = ReturnOwner(ent);
+		if(IsValidClient(owner))
+		{
+			TF2Attrib_RemoveByName(GetPlayerWeaponSlot(owner, 0), "cannot pick up intelligence");
+			TF2Attrib_RemoveByName(GetPlayerWeaponSlot(owner, 1), "cannot pick up intelligence");
+			TF2Attrib_RemoveByName(GetPlayerWeaponSlot(owner, 2), "cannot pick up intelligence");
+		}
+	}
 }
