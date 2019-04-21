@@ -3,7 +3,7 @@
 Created by: Zethax
 Document created on: Wednesday, January 9th, 2019
 Last edit made on: Tuesday, January 29th, 2019
-Current version: v2.0
+Current version: v1.1
 
 Attributes in this pack:
 	- "dispenser minigun main"
@@ -49,9 +49,10 @@ Attributes in this pack:
 #define PLUGIN_NAME "Dispenser Minigun"
 #define PLUGIN_DESC "Creates the attributes associated with the dispenser minigun"
 #define PLUGIN_AUTH "Zethax"
-#define PLUGIN_VERS "v2.0"
+#define PLUGIN_VERS "v1.1"
 
-#define SOUND_DISPENSER_HEAL "weapons/dispenser_heal.wav"
+//apparently because the sound was "too annoying"
+//#define SOUND_DISPENSER_HEAL "weapons/dispenser_heal.wav"
 
 #define TF_ECON_INDEX_PERSIAN_PERSUADER 404
 #define TF_ECON_INDEX_BACKSCRATCHER 326
@@ -88,7 +89,8 @@ public OnPluginStart()
 
 public OnMapStart()
 {
-	PrecacheSound(SOUND_DISPENSER_HEAL, true);
+	//apparently because the sound was "too annoying"
+	//PrecacheSound(SOUND_DISPENSER_HEAL, true);
 }
 
 public OnClientPutInServer(client)
@@ -119,6 +121,10 @@ new Float:LastAmmoTick[MAXPLAYERS + 1];
 new Float:LastHealTick[MAXPLAYERS + 1];
 new MaxAmmo[2049];
 new LastHealer[MAXPLAYERS + 1];
+//ugh
+//for delaying effects until fully spun up
+//incredibly dumb concept, why does he make me do this
+new Float:SpinupDelay[MAXPLAYERS + 1];
 
 new g_iParticleEntityStart[MAXPLAYERS+1][MAXPLAYERS+1];
 new g_iParticleEntityEnd[MAXPLAYERS+1][MAXPLAYERS+1];
@@ -128,25 +134,25 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	KillAllDualParticles(client);
-	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+	//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 }
 public Action:OnPlayerDisconnect(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	KillAllDualParticles(client);
-	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+	//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 }
 public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	KillAllDualParticles(client);
-	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+	//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 }
 public Action:OnInventoryApplication(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	KillAllDualParticles(client);
-	StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+	//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 }
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
@@ -224,6 +230,8 @@ public void OnClientPostThink(client)
 		new wep = GetActiveWeapon(healer);
 		if(DispenserMinigun_Heal[wep])
 		{
+			//used throughout for reducing heal rate
+			new Float:fiftypercentModifier = 0.5;
 			//base delay
 			new Float:delay = 1.0 / (GetClientMaxHealth(client) * DispenserMinigun_HealRate[wep]);
 			
@@ -236,11 +244,11 @@ public void OnClientPostThink(client)
 			//iincrease delay if they have the persian persuader or back scratcher equipped
 			if(GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_PERSIAN_PERSUADER || 
 				GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_BACKSCRATCHER)
-				delay /= 0.5;
+				delay /= fiftypercentModifier;
 			
 			//decrease delay if the Heavy is using dispensing fury
 			if(DispenserMinigun_InFury[wep])
-				delay *= 0.5;
+				delay *= fiftypercentModifier;
 			
 			if(GetClientHealth(client) < GetClientMaxHealth(client) && GetEngineTime() >= LastHealTick[client] + delay)
 			{
@@ -301,6 +309,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 	//new buttons = GetClientButtons(client);
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
+		SpinupDelay[client] += 0.1;
 		if(ReduceHealingSpinning[weapon])
 		{
 			TF2Attrib_SetByName(weapon, "reduced_healing_from_medics", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
@@ -310,51 +319,56 @@ static void DispenserMinigun_PostThink(client, weapon)
 		TF2_AddCondition(client, TFCond:20, 1.0);
 		new Float:Pos1[3];
 		GetClientAbsOrigin(client, Pos1);
-		for(new i = 1; i < MaxClients; i++)
+		if(SpinupDelay[client] >= 1.0)
 		{
-			if(IsValidClient(i) && GetClientTeam(i) == GetClientTeam(client))
+			for(new i = 1; i < MaxClients; i++)
 			{
-				//Gets the position of the valid player in question
-				new Float:Pos2[3];
-				GetClientAbsOrigin(i, Pos2);
-				
-				//Gets the distance between the Heavy and the client
-				new Float:distance = GetVectorDistance(Pos1, Pos2);
-				
-				//A check to remove InRadius
-				//Used for sounds
-				if(distance > DispenserMinigun_Radius[weapon] * radmult &&
-				    LastHealer[i] == client && DispenserMinigun_InRadius[i])
+				if(IsValidClient(i) && GetClientTeam(i) == GetClientTeam(client))
 				{
-					DispenserMinigun_InRadius[i] = false;
-					KillDualParticle(client, i);
-				}
-				
-				if(distance <= DispenserMinigun_Radius[weapon] * radmult)
-				{
-					//Emits healing sound to players that step into the radius
-					if(!DispenserMinigun_InRadius[i])
-					{
-						DispenserMinigun_InRadius[i] = true;
-						StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
-						if(DispenserMinigun_InFury[weapon])
-							EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM, _, _, _, 125);
-						else
-							EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
-						
-						if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked))
-						{
-							if(TF2_GetClientTeam(i) == TFTeam_Blue)
-								AttachDualParticle(client, i, "medicgun_beam_blue");
-							if(TF2_GetClientTeam(i) == TFTeam_Red)
-								AttachDualParticle(client, i, "medicgun_beam_red");
-						}
-					}
-					if(DispenserMinigun_InFury[weapon])
-						TF2_AddCondition(i, TFCond:20, 0.2, client);
+					//Gets the position of the valid player in question
+					new Float:Pos2[3];
+					GetClientAbsOrigin(i, Pos2);
 					
-					//Helps the system track who did the healing
-					LastHealer[i] = client;
+					//Gets the distance between the Heavy and the client
+					new Float:distance = GetVectorDistance(Pos1, Pos2);
+					
+					//A check to remove InRadius
+					//Used for sounds
+					if(distance > DispenserMinigun_Radius[weapon] * radmult &&
+					    LastHealer[i] == client && DispenserMinigun_InRadius[i])
+					{
+						DispenserMinigun_InRadius[i] = false;
+						KillDualParticle(client, i);
+					}
+					
+					if(distance <= DispenserMinigun_Radius[weapon] * radmult)
+					{
+						//Emits healing sound to players that step into the radius
+						if(!DispenserMinigun_InRadius[i])
+						{
+							DispenserMinigun_InRadius[i] = true;
+							
+							//apparently because the sound was "too annoying"
+							//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+							//if(DispenserMinigun_InFury[weapon])
+							//	EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM, _, _, _, 125);
+							//else
+							//	EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
+							
+							if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked))
+							{
+								if(TF2_GetClientTeam(i) == TFTeam_Blue)
+									AttachDualParticle(client, i, "medicgun_beam_blue");
+								if(TF2_GetClientTeam(i) == TFTeam_Red)
+									AttachDualParticle(client, i, "medicgun_beam_red");
+							}
+						}
+						if(DispenserMinigun_InFury[weapon])
+							TF2_AddCondition(i, TFCond:20, 0.2, client);
+						
+						//Helps the system track who did the healing
+						LastHealer[i] = client;
+					}
 				}
 			}
 		}
@@ -364,7 +378,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 		if(DispenserMinigun[weapon])
 		{
 			DispenserMinigun_InRadius[client] = false;
-			StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+			//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			KillAllDualParticles(client);
 		}
 		
@@ -392,7 +406,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 			DispenserMinigun_InFury[weapon] = true; //Tells the system this guy is dispensing like mad
 			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
 			
-			StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+			//apparently because the sound was "too annoying"
+			//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			DispenserMinigun_InRadius[client] = false;
 		}
 	}
@@ -402,8 +417,11 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
 							//Allows him to gain rage again
-		StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
-		EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
+		
+		//apparently because the sound was "too annoying"
+		//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
+		//EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
+		
 		DispenserMinigun_InRadius[client] = false;
 	}
 	
