@@ -3,10 +3,14 @@
 Created by: Zethax
 Document created on: March 28th, 2019
 Last edit made on: March 28th, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "condiment cannon attrib"
+		1) Duration of each condition
+		2..10) Conditions to be added in order from last shot to first shot in clip
+		Say I wanted to apply bleed as the last effect, I'd put the bleed ID first, then add everything else.
+		If I wanted to apply jarate on my first shot in a clip of 4, I would add 3 other effects THEN add the ID for jarate.
 
 */
 
@@ -22,7 +26,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_condiment_cannon"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute which applies conditions based on the amount of shots in the weapon clip."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
