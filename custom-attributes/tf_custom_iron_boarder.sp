@@ -6,7 +6,15 @@ Last edit made on: March 11th, 2019
 Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "iron boarder attribute"
+		1) Maximum healing on hit without a shield equipped
+		2) Maximum shield charge on hit with a shield equipped
+		
+	-> "damage bonus while shield is recharging"
+		1) Damage bonus to grant while your shield is recharging
+	
+	-> "reload speed penalty in non shield mode"
+		1) Reload speed penalty to apply with no shield equipped
 
 */
 
