@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: February 28th, 2019
-Last edit made on: February 28th, 2019
+Last edit made on: April 23rd, 2019
 Current version: v1.0
 Attributes in this pack:
 	- "detection field while active"
@@ -53,6 +53,7 @@ public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PreThink, OnClientPreThink);
 	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
+	SDKHook(client, SDKHook_SetTransmit, OnTransmit);
 }
 
 new bool:Detector[2049];
@@ -64,6 +65,7 @@ new bool:Detected[MAXPLAYERS + 1];
 new Float:Detected_Dur[MAXPLAYERS + 1];
 new Float:Detected_DmgVuln[MAXPLAYERS + 1];
 new Float:Detected_MaxDur[MAXPLAYERS + 1];
+new Detected_Inflictor[MAXPLAYERS + 1];
 
 new Float:LastTick[MAXPLAYERS + 1];
 
@@ -99,11 +101,6 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	{
 		if(Detected[victim])
 		{
-			if(TF2_IsPlayerInCondition(victim, TFCond_MarkedForDeathSilent))
-			{
-				damage /= 1.35;
-			}
-			
 			damage *= 1.0 + Detected_DmgVuln[victim];
 			return Plugin_Changed;
 		}
@@ -116,8 +113,12 @@ public OnClientPreThink(client)
 	if(!IsValidClient(client))
 		return;
 	
-	if(Detected[client] && GetEngineTime() >= Detected_Dur[client] + Detected_MaxDur[client])
-		RemoveDetection(client);
+	if(Detected[client])
+	{
+		new detector = Detected_Inflictor[client];
+		if(GetEngineTime() >= Detected_Dur[client] + Detected_MaxDur[client] || GetEntProp(detector, Prop_Data, "m_iAmmo", 4, 3) <= 0)
+			RemoveDetection(client);
+	}
 	
 	new weapon = GetActiveWeapon(client);
 	if(weapon < 0 || weapon > 2048)
@@ -153,6 +154,25 @@ public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcas
 		}
 	}
 	
+	return Plugin_Continue;
+}
+
+public Action:OnTransmit(entity, client)
+{
+	if(0 < client <= MaxClients && 0 < entity <= MaxClients && Detected[client])
+	{
+		SetEntProp(entity, Prop_Send, "m_bGlowEnabled", 0);
+		new weapon = GetActiveWeapon(entity);
+		if(weapon > -1 && weapon < 2049 && Detector[weapon])
+		{
+			new Float:clientPos[3];
+			new Float:targetPos[3];
+			GetClientAbsOrigin(client, clientPos);
+			GetClientAbsOrigin(entity, targetPos);
+			if(GetVectorDistance(clientPos, targetPos) <= Detector_Radius[weapon])
+				SetEntProp(entity, Prop_Send, "m_bGlowEnabled", 1);
+		}
+	}
 	return Plugin_Continue;
 }
 
@@ -199,15 +219,13 @@ void Detector_Think(client, weapon)
 					Detected_Dur[target] = GetEngineTime();
 					Detected_MaxDur[target] = Detector_Duration[weapon];
 					Detected_DmgVuln[target] = Detector_DmgVuln[weapon];
+					Detected_Inflictor[target] = client;
 					SetEntProp(target, Prop_Send, "m_bGlowEnabled", 1);
-					TF2_AddCondition(target, TFCond_MarkedForDeathSilent, 0.2);
 				}
 			}
 		}
-		SetEntProp(client, Prop_Send, "m_bGlowEnabled", 1);
 	}
-	else
-		SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
 	
 	LastTick[client] = GetEngineTime();
 }
+
