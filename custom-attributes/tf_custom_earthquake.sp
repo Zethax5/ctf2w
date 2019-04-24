@@ -236,10 +236,6 @@ stock CreateEarthquake(client, slot)
 					g_f1026LastLand[client] = GetEngineTime();
 					new Float:fDamage = baseDamage * (((range - fDistance) * falloff) / (range * falloff)); 
 					Entity_Hurt(victim, RoundFloat(fDamage), client, TF_CUSTOM_BOOTS_STOMP, "tf_wearable"); 
-					if(IsPlayerInCondition(victim, TFCond_Milked))
-						HealPlayer(client, client, RoundFloat(fDamage * 0.6), 1.0);
-					if(IsPlayerInCondition(client, TFCond:28))
-						HealPlayer(client, client, RoundFloat(fDamage * 0.35), 1.0);
 				}
 			}
 		}
