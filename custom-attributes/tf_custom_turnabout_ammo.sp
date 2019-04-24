@@ -2,7 +2,7 @@
 
 Created by: Zethax
 Document created on: February 27th, 2019
-Last edit made on: March 3rd, 2019
+Last edit made on: April 23rd, 2019
 Current version: v1.0
 
 Attributes in this pack:
@@ -26,7 +26,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_turnabout_ammo"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds an attribute that grants your primary weapon infinite ammo based on accuracy."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 public Plugin:my_info = {
   
@@ -39,8 +39,6 @@ public Plugin:my_info = {
 
 public OnPluginStart() {
  	
- 	//stuff used for detecting when a building gets destroyed with a sapper on it
- 	HookEvent("player_sapped_object", OnBuildingSapped);
  	HookEvent("object_destroyed", OnBuildingDestroyed);
  	
 	for(new i = 1 ; i < MaxClients ; i++)
@@ -65,7 +63,6 @@ new TurnaboutAmmo_GainOnBackstab[2049];
 new TurnaboutAmmo_Ammo[2049];
 
 new Float:LastTick[MAXPLAYERS + 1];
-new Sapper[2049] = -1;
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
 {
@@ -111,26 +108,16 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	return Plugin_Continue;
 }
 
-public Action:OnBuildingSapped(Handle:event, const String:name[], bool:dontBroadcast)
-{
-	new building = GetEventInt(event, "object");
-	new attacker = GetClientOfUserId(GetEventInt(event, "userid"));
-	if(building > -1 && attacker > -1)
-	{
-		PrintToChat(attacker, "Building edict: %i", building);
-		Sapper[building] = attacker;
-	}
-}
-
 public Action:OnBuildingDestroyed(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new building = GetEventInt(event, "index");
+	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
+	new assister = GetClientOfUserId(GetEventInt(event, "assister"));
 	if(IsValidEntity(building))
 	{
 		new HasSapper = GetEntProp(building, Prop_Send, "m_bHasSapper");
-		if(HasSapper && Sapper[building] > -1)
+		if(HasSapper)
 		{
-			new attacker = Sapper[building];
 			if(IsValidClient(attacker))
 			{
 				new weapon = GetPlayerWeaponSlot(attacker, 0);
@@ -140,7 +127,16 @@ public Action:OnBuildingDestroyed(Handle:event, const String:name[], bool:dontBr
 					if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
 						TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
 				}
-				Sapper[building] = -1;
+			}
+			if(IsValidClient(assister))
+			{
+				new weapon = GetPlayerWeaponSlot(assister, 0);
+				if(weapon > -1 && TurnaboutAmmo[weapon])
+				{
+					TurnaboutAmmo_Ammo[weapon] += TurnaboutAmmo_GainOnSap[weapon];
+					if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
+						TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
+				}
 			}
 		}
 	}
@@ -170,15 +166,22 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 	}
 }
 
-public OnTakeDamageBuilding(victim, attacker, inflictor, Float:damage, damagetype, weapon, const Float:damageForce[3], const Float:damagePosition[3], damageCustom)
+public Action:OnTakeDamage_Building(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
 {
-	if(attacker)
+	if (attacker < 0 || attacker > MaxClients) return Plugin_Continue;
+	if (weapon > -1)
 	{
-		if(TurnaboutAmmo[weapon])
+		if (TurnaboutAmmo[weapon])
 		{
-			TurnaboutAmmo_Ammo[weapon] += 1;
+			TurnaboutAmmo_Ammo[weapon]++;
+			if(TurnaboutAmmo_Ammo[weapon] > TurnaboutAmmo_Max[weapon])
+				TurnaboutAmmo_Ammo[weapon] = TurnaboutAmmo_Max[weapon];
+			
+			SetClip_Weapon(weapon, TurnaboutAmmo_Ammo[weapon]);
+			SetAmmo_Weapon(attacker, weapon, TurnaboutAmmo_Ammo[weapon]);
 		}
 	}
+	return Plugin_Continue;
 }
 
 public OnClientPostThink(client)
@@ -208,26 +211,6 @@ void TurnaboutAmmo_PostThink(client, weapon)
 	LastTick[client] = GetEngineTime();
 }
 
-public OnEntityCreated(ent, const String:cls[])
-{
-	if(ent < 0 || ent > 2048)
-		return;
-	
-	if(IsClassname(ent, "obj_sentrygun") || IsClassname(ent, "obj_dispenser") ||
-	IsClassname(ent, "obj_teleporter"))
-	{
-		CreateTimer(0.3, OnBuildingSpawned, TIMER_FLAG_NO_MAPCHANGE, EntIndexToEntRef(ent));
-	}
-}
-
-public Action:OnBuildingSpawned(Handle:timer, any:ref)
-{
-	new ent = EntRefToEntIndex(ref);
-	if(IsValidEntity(ent))
-		SDKHook(ent, SDKHook_OnTakeDamagePost, OnTakeDamageBuilding);
-	return;
-}
-
 public OnEntityDestroyed(ent)
 {
     if(ent < 0 || ent > 2048)
@@ -237,4 +220,15 @@ public OnEntityDestroyed(ent)
 	TurnaboutAmmo_GainOnSap[ent] = 0;
 	TurnaboutAmmo_GainOnBackstab[ent] = 0;
 	TurnaboutAmmo_Ammo[ent] = 0;
+}
+
+public OnEntityCreated(entity, const String:cls[])
+{
+	if(entity < 0 || entity > 2048)
+		return;
+	
+	if(!StrContains(cls, "obj_", false))
+	{
+		SDKHook(entity, SDKHook_OnTakeDamage, OnTakeDamage_Building);
+	}
 }

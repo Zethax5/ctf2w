@@ -1,12 +1,21 @@
 /*
 
 Created by: Zethax
-Document created on: April, 2019
+Document created on: April 2019
 Last edit made on: April 23rd, 2019
-Current version: v0.0
+Current version: v1.0
 
 Attributes in this pack:
- None so far
+	-> "earthquake on blast jump land"
+		1) Range
+		2) Maximum damage
+		3) Distance falloff multiplier
+		4) Knockback multiplier
+		Creates earthquakes when the player lands from a blast jump
+		
+	-> "earthquake on fall damage"
+		Same values as "earthquake on blast jump land"
+		Will create an earthquake when the player takes fall damage instead of when the player lands from a blast jump.
 
 */
 
@@ -23,7 +32,7 @@ Attributes in this pack:
 #define PLUGIN_NAME "tf_custom_earthquake"
 #define PLUGIN_AUTH "Zethax"
 #define PLUGIN_DESC "Adds in 2 attributes associated with creating earthquakes."
-#define PLUGIN_VERS "v0.0"
+#define PLUGIN_VERS "v1.0"
 
 #define TEAM_RED    2
 #define TEAM_BLUE   3
@@ -83,7 +92,7 @@ public OnMapStart()
 
 public OnClientPutInServer(client)
 {
-	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	SDKHook(client, SDKHook_OnTakeDamageAlive, OnTakeDamageAlive);
 }
 
 new bool:Earthquake[MAXPLAYERS + 1][MAXSLOTS + 1];
@@ -116,6 +125,9 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 	}
 	else if(StrEqual(attrib, "earthquake on fall damage"))
 	{
+		new String:values[4][10];
+		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
+		
 		Earthquake_Radius[client][slot] = StringToFloat(values[0]);
 		Earthquake_Damage[client][slot] = StringToFloat(values[1]);
 		Earthquake_Falloff[client][slot] = StringToFloat(values[2]);
@@ -123,7 +135,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		Earthquake_WhileActive[client][slot] = whileActive;
 		
 		Earthquake[client][slot] = true;
-		Earthquake_TriggerOnFallDamage[client][slot] = true;
+		Earthquake_TriggerFromFallDamage[client][slot] = true;
 		action = Plugin_Handled;
 	}
 	
@@ -137,8 +149,32 @@ public Action:OnBlastJumpLanded(Handle:event, const String:name[], bool:dontBroa
 	if(!IsValidClient(client))
 		return Plugin_Continue;
 	
-	new primary = 1;
-	new slot = GetClientSlot
+	if(GetHasAttributeInAnySlot(client, _, Earthquake) && !GetHasAttributeInAnySlot(client, _, Earthquake_TriggerFromFallDamage))
+	{
+		new wep = GetSlotContainingAttribute(client, Earthquake);
+		if(!Earthquake_WhileActive[client][wep] || (Earthquake_WhileActive[client][GetWeaponSlot(client, GetActiveWeapon(client))] && wep > -1 && wep < 2049))
+		{
+			CreateEarthquake(client, wep);
+		}
+	}
+	
+	return Plugin_Continue;
+}
+
+public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon, Float:damageForce[3], Float:damagePosition[3])
+{
+	if(damagetype & DMG_FALL)
+	{
+		if(IsValidClient(victim) && GetHasAttributeInAnySlot(victim, _, Earthquake_TriggerFromFallDamage))
+		{
+			new wep = GetSlotContainingAttribute(victim, Earthquake);
+			if(!Earthquake_WhileActive[victim][wep] || (Earthquake_WhileActive[victim][GetWeaponSlot(victim, GetActiveWeapon(victim))] && wep > -1 && wep < 2049))
+			{
+				CreateEarthquake(victim, wep);
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public CW3_OnWeaponRemoved(slot, client)
@@ -149,7 +185,7 @@ public CW3_OnWeaponRemoved(slot, client)
 	Earthquake_Falloff[client][slot] = 0.0;
 	Earthquake_KnockbackMult[client][slot] = 0.0;
 	Earthquake_WhileActive[client][slot] = false;
-	Earthquake_TriggerOnFallDamage[client][slot] = false;
+	Earthquake_TriggerFromFallDamage[client][slot] = false;
 }
 
 new Float:g_f1026LastLand[MAXPLAYERS+1] = 0.0;
@@ -158,8 +194,9 @@ stock CreateEarthquake(client, slot)
 {
 	if(GetEngineTime() <= g_f1026LastLand[client] + ATTRIBUTE_1026_COOLDOWN) return;
 	
-	if((GetHasAttributeInAnySlot(client, _, Earthquake) && !GetHasAttributeInAnySlot(client, _, EarthquakeActive)) || EarthquakeActive[client][slot])
+	if((GetHasAttributeInAnySlot(client, _, Earthquake) && !GetHasAttributeInAnySlot(client, _, Earthquake_WhileActive)) || Earthquake_WhileActive[client][slot])
 	{
+		new Float:range = Earthquake_Radius[client][slot];
 		new Float:fPushMax = ATTRIBUTE_1026_PUSHMAX;
 		
 		new Float:fDistance;
@@ -174,7 +211,7 @@ stock CreateEarthquake(client, slot)
 		EmitSoundFromOrigin(SOUND_EXPLOSION_BIG, vClientPos);
 		TE_SetupExplosion(vClientPos, g_iExplosionSprite, 10.0, 1, 0, 0, 750);
 		TE_SendToAll();
-		TE_SetupBeamRingPoint(vClientPos, 10.0, GetAttributeValueInAnySlot(client, _, Earthquake, Earthquake_Range, 600.0), g_iWhite, g_iHaloSprite, 0, 10, 0.2, 10.0, 0.5, g_iTeamColorSoft[team], 50, 0);
+		TE_SetupBeamRingPoint(vClientPos, 10.0, range, g_iWhite, g_iHaloSprite, 0, 10, 0.2, 10.0, 0.5, g_iTeamColorSoft[team], 50, 0);
 		TE_SendToAll();
 		
 		Shake(client);
@@ -185,17 +222,19 @@ stock CreateEarthquake(client, slot)
 			{
 				Entity_GetAbsOrigin(victim, vVictimPos);
 				fDistance = GetVectorDistance(vVictimPos, vClientPos);
-				if(fDistance <= GetAttributeValueInAnySlot(client, _, Earthquake, Earthquake_Range, 600.0))
+				if(fDistance <= range)
 				{
+					new Float:falloff = Earthquake_Falloff[client][slot];
+					new Float:baseDamage = Earthquake_Damage[client][slot];
 					SubtractVectors(vVictimPos, vClientPos, vPush);
-					new Float:fPushScale = ((GetAttributeValueInAnySlot(client, _, Earthquake, Earthquake_Range, 600.0) - fDistance) / GetAttributeValueF(client, _, Earthquake, Earthquake_Range))*GetAttributeValueF(client, _, Earthquake, Earthquake_Pushscale);
+					new Float:fPushScale = ((range - fDistance) / range)*Earthquake_KnockbackMult[client][slot];
 					if(fPushScale > fPushMax) fPushScale = fPushMax;
 					ScaleVector(vPush, fPushScale);
 					Shake(victim);
 					if(vPush[2] < 400.0) vPush[2] = 400.0;
 					TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, vPush);
 					g_f1026LastLand[client] = GetEngineTime();
-					new Float:fDamage = GetAttributeValueF(client, _, Earthquake, Earthquake_Damage) * ((GetAttributeValueF(client, _, Earthquake, Earthquake_Range) - fDistance * GetAttributeValueF(client, _, Earthquake, Earthquake_MinFalloff)) / (GetAttributeValueF(client, _, Earthquake, Earthquake_Range) * GetAttributeValueF(client, _, Earthquake, Earthquake_MinFalloff))); 
+					new Float:fDamage = baseDamage * (((range - fDistance) * falloff) / (range * falloff)); 
 					Entity_Hurt(victim, RoundFloat(fDamage), client, TF_CUSTOM_BOOTS_STOMP, "tf_wearable"); 
 				}
 			}
@@ -203,39 +242,15 @@ stock CreateEarthquake(client, slot)
 	}
 }
 
-stock GetClientSlot(client)
-{
-	if(!Client_IsValid(client)) return -1;
-	if(!IsPlayerAlive(client)) return -1;
-	
-	new slot = GetWeaponSlot(client, Client_GetActiveWeapon(client));
-	return slot;
-}
-stock GetWeaponSlot(client, weapon)
-{
-	if(!Client_IsValid(client)) return -1;
-	
-	for(new i = 0; i < MAXSLOTS; i++)
-	{
-		if(weapon == GetPlayerWeaponSlot(client, i))
-		{
-			return i;
-		}
-	}
-	return -1;
-}
 stock bool:GetHasAttributeInAnySlot(client, slot = -1, const attribute[][] = m_bHasAttribute)
 {
 	if(!Client_IsValid(client)) return false;
 	
 	for(new i = 0; i < MAXSLOTS; i++)
 	{
-		if(m_bHasAttribute[client][i])
+		if(attribute[client][i])
 		{
-			if(attribute[client][i])
-			{
-				if(slot == -1 || slot == i) return true;
-			}
+			if(slot == -1 || slot == i) return true;
 		}
 	}
 	
@@ -258,4 +273,18 @@ stock EmitSoundFromOrigin(const String:sound[],const Float:orig[3])
 stock bool:OnGround(client)
 {
 	return (GetEntityFlags(client) & FL_ONGROUND == FL_ONGROUND);
+}
+stock GetSlotContainingAttribute(client, const attribute[][] = m_bHasAttribute)
+{
+	if(!Client_IsValid(client)) return false;
+	
+	for(new i = 0; i < MAXSLOTS; i++)
+	{
+		if(attribute[client][i])
+		{
+			return i;
+		}
+	}
+	
+	return -1;
 }
