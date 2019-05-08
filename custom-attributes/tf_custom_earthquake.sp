@@ -1,10 +1,8 @@
 /*
-
 Created by: Zethax
 Document created on: April 2019
 Last edit made on: April 23rd, 2019
 Current version: v1.0
-
 Attributes in this pack:
 	-> "earthquake on blast jump land"
 		1) Range
@@ -16,7 +14,6 @@ Attributes in this pack:
 	-> "earthquake on fall damage"
 		Same values as "earthquake on blast jump land"
 		Will create an earthquake when the player takes fall damage instead of when the player lands from a blast jump.
-
 */
 
 #pragma semicolon 1
@@ -234,8 +231,12 @@ stock CreateEarthquake(client, slot)
 					if(vPush[2] < 400.0) vPush[2] = 400.0;
 					TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, vPush);
 					g_f1026LastLand[client] = GetEngineTime();
-					new Float:fDamage = baseDamage * (((range - fDistance) * falloff) / (range * falloff)); 
+					new Float:fDamage = (baseDamage * falloff) + (baseDamage * falloff * (((range - fDistance) * falloff) / (range * falloff))); 
 					Entity_Hurt(victim, RoundFloat(fDamage), client, TF_CUSTOM_BOOTS_STOMP, "tf_wearable"); 
+					if(TF2_IsPlayerInCondition(victim, TFCond_Milked))
+						HealOnHit(client, RoundFloat(fDamage * 0.6), 1.0);
+					if(TF2_IsPlayerInCondition(client, TFCond:29))
+						HealOnHit(client, RoundFloat(fDamage * 0.35), 1.0);
 				}
 			}
 		}
@@ -287,4 +288,24 @@ stock GetSlotContainingAttribute(client, const attribute[][] = m_bHasAttribute)
 	}
 	
 	return -1;
+}
+
+stock HealOnHit(patient = -1, amount = 0, Float:overheal = 1.0)
+{
+	if (patient <= 0 || patient > MaxClients)return;
+	new health = GetClientHealth(patient);
+	new maxhealth = GetClientMaxHealth(patient);
+	if(amount > 0)
+	{
+		health += amount;
+		if(health > maxhealth * overheal)
+		{
+			health = RoundFloat(maxhealth * overheal);
+		}
+		new Handle:healevent = CreateEvent("player_healonhit", true);
+		SetEventInt(healevent, "entindex", patient);
+		SetEventInt(healevent, "amount", amount);
+		FireEvent(healevent);
+		SetEntityHealth(patient, health);
+	}
 }

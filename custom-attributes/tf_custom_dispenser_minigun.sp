@@ -5,6 +5,10 @@ Document created on: Wednesday, January 9th, 2019
 Last edit made on: Tuesday, January 29th, 2019
 Current version: v1.1
 
+Credits:
+-Pikachu on LSD
+	If you see anything involving DHooks or external files it's his
+
 Attributes in this pack:
 	- "dispenser minigun main"
 		1) Radius of the dispenser
@@ -42,6 +46,7 @@ Attributes in this pack:
 #include <tf2>
 #include <tf2_stocks>
 #include <sdkhooks>
+#include <dhooks>
 #include <sdktools>
 #include <zethax>
 #include <tf2attributes>
@@ -56,6 +61,7 @@ Attributes in this pack:
 
 #define TF_ECON_INDEX_PERSIAN_PERSUADER 404
 #define TF_ECON_INDEX_BACKSCRATCHER 326
+new Handle:g_DHookPlayerTakeHealth;
 
 public Plugin:my_info = {
 	
@@ -72,6 +78,7 @@ public Plugin:my_info = {
 
 public OnPluginStart() 
 {
+	new Handle:hGameConf = LoadGameConfigFile("tf2.weapon_overhaul"); 
 	
 	HookEvent("player_death", OnPlayerDeath);
 	HookEvent("player_spawn", OnPlayerSpawn);
@@ -85,6 +92,18 @@ public OnPluginStart()
 		
 		OnClientPutInServer(i);
 	}
+	
+	new iOffset = GameConfGetOffset(hGameConf, "CTFPlayer::TakeHealth()");
+	if (iOffset == -1) {
+		SetFailState("Missing offset for CTFPlayer::TakeHealth()"); 
+	}
+	
+	g_DHookPlayerTakeHealth = DHookCreate(iOffset, HookType_Entity, ReturnType_Bool,
+			ThisPointer_CBaseEntity, OnPlayerTakeHealth);
+	DHookAddParam(g_DHookPlayerTakeHealth, HookParamType_Float); // flHealth
+	DHookAddParam(g_DHookPlayerTakeHealth, HookParamType_Int); // bitsDamageType
+	
+	delete hGameConf;
 }
 
 public OnMapStart()
@@ -96,6 +115,8 @@ public OnMapStart()
 public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PostThink, OnClientPostThink);
+	
+	DHookEntity(g_DHookPlayerTakeHealth, false, client);
 }
 
 new bool:DispenserMinigun[2049];
@@ -310,11 +331,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
 		SpinupDelay[client] += 0.1;
-		if(ReduceHealingSpinning[weapon])
-		{
-			TF2Attrib_SetByName(weapon, "healing received bonus", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
-			TF2Attrib_SetByName(weapon, "health from packs decreased", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medkits
-		}
 		
 		TF2_AddCondition(client, TFCond:20, 1.0);
 		new Float:Pos1[3];
@@ -380,13 +396,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 			DispenserMinigun_InRadius[client] = false;
 			//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			KillAllDualParticles(client);
-		}
-		
-		if(ReduceHealingSpinning[weapon])
-		{
-			TF2Attrib_RemoveByName(weapon, "health from packs decreased"); //reduce healing from packs
-			//TF2Attrib_RemoveByName(weapon, "health from healers reduced"); //reduce healing from dispensers
-			TF2Attrib_RemoveByName(weapon, "reduced_healing_from_medics"); //reduce healing from medics
 		}
 		
 		SpinupDelay[client] = 0.0;
@@ -540,4 +549,36 @@ KillAllDualParticles(iClient)
 		KillDualParticle(iClient, iTarget);
 		KillDualParticle(iTarget, iClient);
 	}
+}
+
+new Float:HealFrac[MAXPLAYERS + 1];
+
+public MRESReturn OnPlayerTakeHealth(client, Handle:hReturn, Handle:hParams)
+{
+	new weapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	
+	new Float:flHealth = DHookGetParam(hParams, 1);
+	
+	if(weapon < 0 || weapon > 2048)
+		return MRES_Ignored;
+	
+	if(!ReduceHealingSpinning[weapon])
+		return MRES_Ignored;
+	
+	if(!TF2_IsPlayerInCondition(client, TFCond:0))
+		return MRES_Ignored;
+	
+	new Float:flHealMult = 1.0 - ReduceHealingSpinning_Amount[weapon];
+	
+	HealFrac[client] += flHealth * flHealMult;
+	
+	if (HealFrac[client] > 1.0) {
+		new Float:flHealAmount = float(RoundToFloor(HealFrac[client]));
+		HealFrac[client] -= flHealAmount;
+		
+		DHookSetParam(hParams, 1, flHealAmount);
+	} else {
+		DHookSetParam(hParams, 1, 0.0);
+	}
+	return MRES_ChangedHandled;
 }

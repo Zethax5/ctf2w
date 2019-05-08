@@ -29,7 +29,7 @@ Attributes in this pack:
 #define PLUGIN_DESC "Adds an attribute associated with gathering heads that act as resurrections"
 #define PLUGIN_VERS "v1.0"
 
-#define SOUND_USEHEAD "player/souls_receive1.wav"
+#define SOUND_USEHEAD "misc/halloween/spell_overheal.wav"
 
 public Plugin:my_info = {
   
@@ -106,7 +106,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 	new Action:action;
 	if(IsValidClient(victim))
 	{
-		new wep = GetPlayerWeaponSlot(victim, 2);
+		new wep = GetActiveWeapon(victim);
 		new health = GetClientHealth(victim);
 		new threshold = RoundToCeil(GetClientMaxHealth(victim) * CursedHeads_Threshold[wep]);
 		if(wep > -1 && CursedHeads_Heads[wep] > 0 && health - RoundToCeil(damage) <= threshold)
@@ -120,7 +120,12 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				//Marks player for death
 				//Using a timer here to prevent damage from becoming a minicrit
 				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHANGE);
+				
 				EmitSoundToAll(SOUND_USEHEAD, victim);
+				if (TF2_GetClientTeam(victim) == TFTeam_Red)
+					AttachParticle(victim, "spell_overheal_red", 0.5);
+				else
+					AttachParticle(victim, "spell_overheal_blue", 0.5);
 				
 				SetEntProp(wep, Prop_Send, "m_iClip1", CursedHeads_Heads[wep]);
 				

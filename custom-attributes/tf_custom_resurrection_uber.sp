@@ -81,6 +81,7 @@ new Float:ReviveUber_UseDelay[2049];
 new bool:PatientBackstabbed[MAXPLAYERS + 1];
 
 new Float:LastTick[MAXPLAYERS + 1];
+new LastPatient[MAXPLAYERS + 1];
 new Healer[MAXPLAYERS + 1];
 
 public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const String:plugin[], const String:value[], bool:whileActive)
@@ -197,8 +198,14 @@ void ReviveUber_PreThink(client, weapon)
 			}
 		}
 		Healer[patient] = client;
-		
+		LastPatient[client] = patient;
 	}
+	else if(!IsValidClient(patient) && IsValidClient(LastPatient[client]))
+	{
+		Healer[LastPatient[client]] = -1;
+		LastPatient[client] = -1;
+	}
+	
 	if((buttons & IN_ATTACK2) == IN_ATTACK2 && GetEngineTime() >= ReviveUber_UseDelay[weapon] + 1.0)
 	{
 		new medicHealth = GetClientHealth(client);

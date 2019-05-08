@@ -146,6 +146,7 @@ void HeatAccuracy_PostThink(client, weapon)
 	{
 		HeatAccuracy_Stacks[weapon] = 0;
 		TF2Attrib_SetByName(weapon, "spread penalty", HeatAccuracy_BaseAccuracy[weapon]);
+		HeatAccuracy_Tick[weapon] = GetEngineTime() + 1.0;
 	}
 }
 
