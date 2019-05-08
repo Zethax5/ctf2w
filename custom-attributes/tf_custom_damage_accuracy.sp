@@ -125,6 +125,9 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 {
 	new Action:action = Plugin_Continue;
 	
+	if(!IsValidClient(attacker))
+		return action;
+	
 	new attribWeapon = GetPlayerWeaponSlot(attacker, 0);
 	if(attribWeapon == -1 || !DamageBuildsAccuracy[attribWeapon])
 		attribWeapon = GetPlayerWeaponSlot(attacker, 1);
