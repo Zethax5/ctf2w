@@ -124,12 +124,13 @@ public OnClientPostThink(client)
 
 void Moonshine_DrinkHandle(client, weapon)
 {
-	if(TF2_IsPlayerInCondition(client, TFCond_Taunting) && !Moonshine_Drinking[weapon])
+	new activeWeapon = GetActiveWeapon(client);
+	if(activeWeapon > -1 && TF2_IsPlayerInCondition(client, TFCond_Taunting) && !Moonshine_Drinking[activeWeapon])
 	{
 		Moonshine_Drinking[weapon] = true;
 		Moonshine_DrinkTick[weapon] = GetEngineTime();
 	}
-	else if(!TF2_IsPlayerInCondition(client, TFCond_Taunting) && Moonshine_Drinking[weapon])
+	else if(activeWeapon > -1 && !TF2_IsPlayerInCondition(client, TFCond_Taunting) && Moonshine_Drinking[activeWeapon])
 	{
 		Moonshine_Drinking[weapon] = false;
 	}
