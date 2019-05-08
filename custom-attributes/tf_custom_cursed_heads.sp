@@ -120,13 +120,14 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				//Marks player for death
 				//Using a timer here to prevent damage from becoming a minicrit
 				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHANGE);
+				EmitSoundToAll(SOUND_USEHEAD, victim);
 				
 				SetEntProp(wep, Prop_Send, "m_iClip1", CursedHeads_Heads[wep]);
 				
 				//Curb damage to prevent the player from dying
 				damage = float(health) - 2.0;
 				//Restores player health to 50%
-				SetEntityHealth(victim, RoundFloat(GetClientMaxHealth(victim) * 0.5 + damage));
+				SetEntityHealth(victim, RoundFloat(GetClientMaxHealth(victim) + damage));
 				action = Plugin_Changed;
 			}
 		}

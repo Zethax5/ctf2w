@@ -312,7 +312,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 		SpinupDelay[client] += 0.1;
 		if(ReduceHealingSpinning[weapon])
 		{
-			TF2Attrib_SetByName(weapon, "reduced_healing_from_medics", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
+			TF2Attrib_SetByName(weapon, "healing received bonus", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medics
 			TF2Attrib_SetByName(weapon, "health from packs decreased", 1.0 - ReduceHealingSpinning_Amount[weapon]); //reduce healing from medkits
 		}
 		
@@ -388,6 +388,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 			//TF2Attrib_RemoveByName(weapon, "health from healers reduced"); //reduce healing from dispensers
 			TF2Attrib_RemoveByName(weapon, "reduced_healing_from_medics"); //reduce healing from medics
 		}
+		
+		SpinupDelay[client] = 0.0;
 	}
 	
 	//Adds the amount the Heavy healed to the rage meter

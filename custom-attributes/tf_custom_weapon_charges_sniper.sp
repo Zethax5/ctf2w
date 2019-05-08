@@ -106,6 +106,9 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	if (MinimumSniperCharge[weapon] > 0.0 && GetEntPropFloat(weapon, Prop_Send, "m_flChargedDamage") > 0.0)
 	{
 		MinimumSniperCharge[weapon] -= ChargeDrain[weapon];
+		if(MinimumSniperCharge[weapon] < 0.0)
+			MinimumSniperCharge[weapon] = 0.0;
+		
 		new melee = GetPlayerWeaponSlot(client, 2);
 		SetEntProp(melee, Prop_Send, "m_iClip1", RoundFloat(MinimumSniperCharge[weapon]));
 	}
@@ -132,7 +135,7 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 		if(weapon > -1 && KillsChargeSniper[weapon])
 		{
 			new primary = GetPlayerWeaponSlot(attacker, 0);
-			if(IsValidEdict(primary))
+			if(primary > 0 && primary < 2049)
 				KillsChargeSniper_OnTakeDamage(primary, weapon);
 		}
 		LastWeaponHurtWith[attacker] = weapon;
@@ -245,9 +248,9 @@ void KillsChargeSniper_OnPlayerDeath(primary, weapon)
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
-	
+	if(ent < 0 || ent > 2048)
+		return;
+
 	KillsChargeSniper[ent] = false;
 	KillsChargeSniper_OnHit[ent] = 0.0;
 	KillsChargeSniper_OnKill[ent] = 0.0;

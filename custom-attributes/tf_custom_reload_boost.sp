@@ -9,6 +9,7 @@ Attributes in this pack:
 	-> "build reload boost on damage"
 		1) Maximum reload boost that can be obtained
 		2) Maximum damage required to obtain max reload boost
+		3) Max clip size of the weapon
 
 */
 

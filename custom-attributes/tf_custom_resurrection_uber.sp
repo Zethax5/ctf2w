@@ -170,7 +170,10 @@ void ReviveUber_PreThink(client, weapon)
 	new Float:ubercharge = GetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel");
 	if(patient > -1)
 	{
-		if(ubercharge >= ReviveUber_AutoDrain[weapon])
+		new Float:mult = 1.0;
+		if(PatientBackstabbed[patient])
+			mult = 2.0;
+		if(ubercharge >= ReviveUber_AutoDrain[weapon] * mult)
 		{
 			new maxMedicHealth = GetClientMaxHealth(client);
 			new maxPatientHealth = GetClientMaxHealth(patient);
@@ -189,10 +192,6 @@ void ReviveUber_PreThink(client, weapon)
 				SetEntityHealth(client, medicHealth + healing);
 				
 				EmitSoundToAll(SOUND_REVIVE, patient);
-				
-				new Float:mult = 1.0;
-				if(PatientBackstabbed[patient])
-					mult = 2.0;
 				
 				SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", ubercharge - ReviveUber_AutoDrain[weapon] * mult);
 			}

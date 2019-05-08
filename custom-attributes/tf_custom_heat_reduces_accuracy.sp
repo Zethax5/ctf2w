@@ -112,13 +112,27 @@ public OnClientPostThink(client)
 
 void HeatAccuracy_PostThink(client, weapon)
 {
-	if(TF2_IsPlayerInCondition(client, TFCond:0))
+	if(TF2_IsPlayerInCondition(client, TFCond:0) && GetAmmo_Weapon(client, weapon) > 0)
 	{
-		if(GetEngineTime() >= HeatAccuracy_Tick[weapon] + HeatAccuracy_Delay[weapon])
+		new buttons = GetClientButtons(client);
+		if((buttons & IN_ATTACK) == IN_ATTACK && GetEngineTime() >= HeatAccuracy_Tick[weapon] + HeatAccuracy_Delay[weapon])
 		{
 			HeatAccuracy_Stacks[weapon]++;
 			if(HeatAccuracy_Stacks[weapon] > HeatAccuracy_MaxStacks[weapon])
 				HeatAccuracy_Stacks[weapon] = HeatAccuracy_MaxStacks[weapon];
+			
+			new Float:baseAccuracy = HeatAccuracy_BaseAccuracy[weapon];
+			new Float:newAccuracy = HeatAccuracy_AccuracyPerStack[weapon] * HeatAccuracy_Stacks[weapon];
+			
+			TF2Attrib_SetByName(weapon, "spread penalty", baseAccuracy + newAccuracy);
+			
+			HeatAccuracy_Tick[weapon] = GetEngineTime();
+		}
+		else if((buttons & IN_ATTACK2) == IN_ATTACK2 && GetEngineTime() >= HeatAccuracy_Tick[weapon] + (HeatAccuracy_Delay[weapon] * 2.0))
+		{
+			HeatAccuracy_Stacks[weapon]--;
+			if(HeatAccuracy_Stacks[weapon] < 0)
+				HeatAccuracy_Stacks[weapon] = 0;
 			
 			new Float:baseAccuracy = HeatAccuracy_BaseAccuracy[weapon];
 			new Float:newAccuracy = HeatAccuracy_AccuracyPerStack[weapon] * HeatAccuracy_Stacks[weapon];
@@ -132,7 +146,6 @@ void HeatAccuracy_PostThink(client, weapon)
 	{
 		HeatAccuracy_Stacks[weapon] = 0;
 		TF2Attrib_SetByName(weapon, "spread penalty", HeatAccuracy_BaseAccuracy[weapon]);
-
 	}
 }
 
