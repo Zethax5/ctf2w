@@ -231,7 +231,7 @@ stock CreateEarthquake(client, slot)
 					if(vPush[2] < 400.0) vPush[2] = 400.0;
 					TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, vPush);
 					g_f1026LastLand[client] = GetEngineTime();
-					new Float:fDamage = (baseDamage * falloff) + (baseDamage * falloff * (((range - fDistance) * falloff) / (range * falloff))); 
+					new Float:fDamage = (baseDamage * falloff) + (baseDamage * (1.0 - falloff) * ((range - fDistance) / range); 
 					Entity_Hurt(victim, RoundFloat(fDamage), client, TF_CUSTOM_BOOTS_STOMP, "tf_wearable"); 
 					if(TF2_IsPlayerInCondition(victim, TFCond_Milked))
 						HealOnHit(client, RoundFloat(fDamage * 0.6), 1.0);
