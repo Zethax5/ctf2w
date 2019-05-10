@@ -146,14 +146,16 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 			if(medigun > -1 && ReviveUber[medigun])
 			{
 				new Float:ubercharge = GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel");
-				if(ubercharge >= ReviveUber_AutoDrain[weapon])
+				new Float:mult = 1.0;
+				if(damageCustom == TF_CUSTOM_BACKSTAB)
+					mult = 2.0;
+				if(ubercharge >= ReviveUber_AutoDrain[weapon] * mult)
 				{
 					new health = GetClientHealth(victim);
 					if(damage >= health)
 					{
 						damage = float(health) - 2.0;
-						if(damageCustom == TF_CUSTOM_BACKSTAB)
-							PatientBackstabbed[victim] = true;
+						PatientBackstabbed[victim] = true;
 						
 						return Plugin_Changed;
 					}
