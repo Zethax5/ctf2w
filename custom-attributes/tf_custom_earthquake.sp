@@ -231,12 +231,12 @@ stock CreateEarthquake(client, slot)
 					if(vPush[2] < 400.0) vPush[2] = 400.0;
 					TeleportEntity(victim, NULL_VECTOR, NULL_VECTOR, vPush);
 					g_f1026LastLand[client] = GetEngineTime();
-					new Float:fDamage = (baseDamage * falloff) + (baseDamage * (1.0 - falloff) * ((range - fDistance) / range); 
+					new Float:fDamage = (baseDamage * falloff) + (baseDamage * (1.0 - falloff) * ((range - fDistance) / range);
+					if(DetectMinicritBuff(client, victim))
+						fDamage *= 1.35;
 					Entity_Hurt(victim, RoundFloat(fDamage), client, TF_CUSTOM_BOOTS_STOMP, "tf_wearable"); 
-					if(TF2_IsPlayerInCondition(victim, TFCond_Milked))
-						HealOnHit(client, RoundFloat(fDamage * 0.6), 1.0);
-					if(TF2_IsPlayerInCondition(client, TFCond:29))
-						HealOnHit(client, RoundFloat(fDamage * 0.35), 1.0);
+					if(TF2_IsPlayerInCondition(victim, TFCond_Milked) || TF2_IsPlayerInCondition(client, TFCond:29))
+						HealOnHit(client, RoundFloat(fDamage * 0.33), 1.0);
 				}
 			}
 		}
@@ -308,4 +308,21 @@ stock HealOnHit(patient = -1, amount = 0, Float:overheal = 1.0)
 		FireEvent(healevent);
 		SetEntityHealth(patient, health);
 	}
+}
+
+stock bool:DetectMinicritBuff(attacker, victim)
+{
+	if(!IsValidClient(attacker))
+		return false;
+	
+	if(TF2_IsPlayerInCondition(attacker, TFCond_Buffed))
+		return true;
+	
+	if(!IsValidClient(victim))
+		return false;
+	
+	if(TF2_IsPlayerInCondition(victim, TFCond_MarkedForDeath) || TF2_IsPlayerInCondition(victim, TFCond_MarkedForDeathSilent)
+		return true;
+	
+	return false;
 }
