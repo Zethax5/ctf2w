@@ -91,8 +91,8 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		if(strlen(values[2]))
 			CursedHeads_Threshold[weapon] = StringToFloat(values[2]);
 		
-		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
 		SetEntProp(weapon, Prop_Data, "m_iPrimaryAmmoType", 4);
+		SetEntProp(weapon, Prop_Send, "m_iClip1", 0);
 		
 		CursedHeads[weapon] = true;
 		action = Plugin_Handled;
@@ -120,6 +120,7 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				//Marks player for death
 				//Using a timer here to prevent damage from becoming a minicrit
 				CreateTimer(0.0, MarkPlayerForDeath, victim, TIMER_FLAG_NO_MAPCHANGE);
+				TF2_AddCondition(victim, TFCond_SpeedBuffAlly, CursedHeads_Duration[wep]);
 				
 				EmitSoundToAll(SOUND_USEHEAD, victim);
 				if (TF2_GetClientTeam(victim) == TFTeam_Red)
