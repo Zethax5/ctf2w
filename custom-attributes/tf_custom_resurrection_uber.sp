@@ -149,13 +149,16 @@ public Action:OnTakeDamageAlive(victim, &attacker, &inflictor, &Float:damage, &d
 				new Float:mult = 1.0;
 				if(damageCustom == TF_CUSTOM_BACKSTAB)
 					mult = 2.0;
-				if(ubercharge >= ReviveUber_AutoDrain[weapon] * mult)
+				if(ubercharge >= ReviveUber_AutoDrain[medigun] * mult)
 				{
 					new health = GetClientHealth(victim);
 					if(damage >= health)
 					{
 						damage = float(health) - 2.0;
-						PatientBackstabbed[victim] = true;
+						ReviveUber_PreThink(healer, medigun);
+						
+						if(damageCustom == TF_CUSTOM_BACKSTAB)
+							PatientBackstabbed[victim] = true;
 						
 						return Plugin_Changed;
 					}
@@ -201,6 +204,7 @@ void ReviveUber_PreThink(client, weapon)
 		}
 		Healer[patient] = client;
 		LastPatient[client] = patient;
+		PatientBackstabbed[patient] = false;
 	}
 	else if(!IsValidClient(patient) && IsValidClient(LastPatient[client]))
 	{
