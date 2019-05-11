@@ -141,10 +141,9 @@ new Float:LastTick[MAXPLAYERS + 1];
 new Float:LastAmmoTick[MAXPLAYERS + 1];
 new Float:LastHealTick[MAXPLAYERS + 1];
 new MaxAmmo[2049];
+new HealBeams[MAXPLAYERS + 1][MAXPLAYERS + 1];
 new LastHealer[MAXPLAYERS + 1];
-//ugh
-//for delaying effects until fully spun up
-//incredibly dumb concept, why does he make me do this
+
 new Float:SpinupDelay[MAXPLAYERS + 1];
 
 new g_iParticleEntityStart[MAXPLAYERS+1][MAXPLAYERS+1];
@@ -248,6 +247,7 @@ public void OnClientPostThink(client)
 		new healer = LastHealer[client];
 		if(healer == -1)
 			return;
+		
 		new wep = GetActiveWeapon(healer);
 		if(DispenserMinigun_Heal[wep])
 		{
@@ -260,11 +260,11 @@ public void OnClientPostThink(client)
 			{
 				//increase delay if they have reduced healing while spun up
 				if(ReduceHealingSpinning[weapon])
-					delay /= ReduceHealingSpinning_Amount[weapon];
+					delay /= 1.0 - ReduceHealingSpinning_Amount[weapon];
 			}
 			//iincrease delay if they have the persian persuader or back scratcher equipped
 			if(GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_PERSIAN_PERSUADER || 
-				GetWeaponIndex(GetPlayerWeaponSlot(client, 2)) == TF_ECON_INDEX_BACKSCRATCHER)
+				GetWeaponIndex(GetActiveWeapon(client)) == TF_ECON_INDEX_BACKSCRATCHER)
 				delay /= fiftypercentModifier;
 			
 			//decrease delay if the Heavy is using dispensing fury
@@ -332,7 +332,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		SpinupDelay[client] += 0.1;
 		
-		TF2_AddCondition(client, TFCond:20, 1.0);
+		TF2_AddCondition(client, TFCond:20, 0.2);
 		new Float:Pos1[3];
 		GetClientAbsOrigin(client, Pos1);
 		if(SpinupDelay[client] >= 1.0)
@@ -349,12 +349,17 @@ static void DispenserMinigun_PostThink(client, weapon)
 					new Float:distance = GetVectorDistance(Pos1, Pos2);
 					
 					//A check to remove InRadius
-					//Used for sounds
-					if(distance > DispenserMinigun_Radius[weapon] * radmult &&
-					    LastHealer[i] == client && DispenserMinigun_InRadius[i])
+					//Used to remove particles
+					if(distance > DispenserMinigun_Radius[weapon] * radmult)
 					{
-						DispenserMinigun_InRadius[i] = false;
-						KillDualParticle(client, i);
+						if(LastHealer[i] == client && DispenserMinigun_InRadius[i])
+							DispenserMinigun_InRadius[i] = false;
+						
+						if(HealBeams[client][i] > -1)
+						{
+							KillDualParticle(client, i);
+							HealBeams[client][i] = -1;
+						}
 					}
 					
 					if(distance <= DispenserMinigun_Radius[weapon] * radmult)
@@ -374,9 +379,10 @@ static void DispenserMinigun_PostThink(client, weapon)
 							if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked))
 							{
 								if(TF2_GetClientTeam(i) == TFTeam_Blue)
-									AttachDualParticle(client, i, "medicgun_beam_blue");
+									HealBeams[client][i] = AttachDualParticle(client, i, "medicgun_beam_blue");
 								if(TF2_GetClientTeam(i) == TFTeam_Red)
-									AttachDualParticle(client, i, "medicgun_beam_red");
+									HealBeams[client][i] = AttachDualParticle(client, i, "medicgun_beam_red");
+								
 							}
 						}
 						if(DispenserMinigun_InFury[weapon])
