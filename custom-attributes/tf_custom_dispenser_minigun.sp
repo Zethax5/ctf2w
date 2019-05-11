@@ -332,7 +332,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 	{
 		SpinupDelay[client] += 0.1;
 		
-		TF2_AddCondition(client, TFCond:20, 0.2);
 		new Float:Pos1[3];
 		GetClientAbsOrigin(client, Pos1);
 		if(SpinupDelay[client] >= 1.0)
@@ -369,14 +368,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 						{
 							DispenserMinigun_InRadius[i] = true;
 							
-							//apparently because the sound was "too annoying"
-							//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
-							//if(DispenserMinigun_InFury[weapon])
-							//	EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM, _, _, _, 125);
-							//else
-							//	EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
-							
-							if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked))
+							if(i != client && !TF2_IsPlayerInCondition(i, TFCond_Cloaked) && 
+								((HealBeams[client][i] < 0) || (HealBeams[i][client] < 0)) && !DispenserMinigun[GetActiveWeapon(i)])
 							{
 								if(TF2_GetClientTeam(i) == TFTeam_Blue)
 									HealBeams[client][i] = AttachDualParticle(client, i, "medicgun_beam_blue");
