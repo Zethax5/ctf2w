@@ -62,6 +62,7 @@ Attributes in this pack:
 #define TF_ECON_INDEX_PERSIAN_PERSUADER 404
 #define TF_ECON_INDEX_BACKSCRATCHER 326
 new Handle:g_DHookPlayerTakeHealth;
+new HealBeams[MAXPLAYERS + 1][MAXPLAYERS + 1];
 
 public Plugin:my_info = {
 	
@@ -104,6 +105,11 @@ public OnPluginStart()
 	DHookAddParam(g_DHookPlayerTakeHealth, HookParamType_Int); // bitsDamageType
 	
 	delete hGameConf;
+	
+	for (new i = 0; i < sizeof(HealBeams[]); i++)
+	{
+		HealBeams[i][i] = -1;
+	}
 }
 
 public OnMapStart()
@@ -141,7 +147,6 @@ new Float:LastTick[MAXPLAYERS + 1];
 new Float:LastAmmoTick[MAXPLAYERS + 1];
 new Float:LastHealTick[MAXPLAYERS + 1];
 new MaxAmmo[2049];
-new HealBeams[MAXPLAYERS + 1][MAXPLAYERS + 1];
 new LastHealer[MAXPLAYERS + 1];
 
 new Float:SpinupDelay[MAXPLAYERS + 1];
@@ -295,10 +300,7 @@ public void OnClientPostThink(client)
 					new ammo = RoundToFloor(MaxAmmo[target] * DispenserMinigun_DispenseRate[wep]);
 					new ammotype = GetEntProp(target, Prop_Data, "m_iPrimaryAmmoType");
 					
-					//PrintToChat(client, "ammo count stored as %i", MaxAmmo[wep]);
-					
 					GivePlayerAmmo(client, ammo, ammotype);
-					//PrintToChat(client, "ammo dispensed");
 				}
 				LastAmmoTick[client] = GetEngineTime();
 			}
@@ -327,7 +329,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 		radmult++;
 	new AmountHealed;
 	
-	//new buttons = GetClientButtons(client);
 	if(TF2_IsPlayerInCondition(client, TFCond:0))
 	{
 		SpinupDelay[client] += 0.1;
@@ -363,7 +364,7 @@ static void DispenserMinigun_PostThink(client, weapon)
 					
 					if(distance <= DispenserMinigun_Radius[weapon] * radmult)
 					{
-						//Emits healing sound to players that step into the radius
+						//Attaches heal beams to players who step in the radius
 						if(!DispenserMinigun_InRadius[i])
 						{
 							DispenserMinigun_InRadius[i] = true;
@@ -390,14 +391,15 @@ static void DispenserMinigun_PostThink(client, weapon)
 	}
 	else if(!TF2_IsPlayerInCondition(client, TFCond:0))
 	{
-		if(DispenserMinigun[weapon])
+		if(SpinupDelay[client] > 0.0)
 		{
 			DispenserMinigun_InRadius[client] = false;
-			//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			KillAllDualParticles(client);
+			for (new i = 0; i < sizeof(HealBeams[]); i++)
+				HealBeams[client][i] = -1;
+			
+			SpinupDelay[client] = 0.0;
 		}
-		
-		SpinupDelay[client] = 0.0;
 	}
 	
 	//Adds the amount the Heavy healed to the rage meter
@@ -416,8 +418,6 @@ static void DispenserMinigun_PostThink(client, weapon)
 			DispenserMinigun_InFury[weapon] = true; //Tells the system this guy is dispensing like mad
 			DispenserMinigun_Dur[weapon] = GetEngineTime(); //For timing
 			
-			//apparently because the sound was "too annoying"
-			//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
 			DispenserMinigun_InRadius[client] = false;
 		}
 	}
@@ -428,11 +428,8 @@ static void DispenserMinigun_PostThink(client, weapon)
 		DispenserMinigun_InFury[weapon] = false; //Signals that the Heavy is no longer furious
 							//Allows him to gain rage again
 		
-		//apparently because the sound was "too annoying"
-		//StopSound(client, SNDCHAN_ITEM, SOUND_DISPENSER_HEAL);
-		//EmitSoundToAll(SOUND_DISPENSER_HEAL, client, SNDCHAN_ITEM);
-		
 		DispenserMinigun_InRadius[client] = false;
+		TF2_RemoveCondition(client, TFCond:20);
 	}
 	
 	//Finally, resets the delay on this mf
