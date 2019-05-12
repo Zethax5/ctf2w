@@ -8,8 +8,9 @@ Current version: v1.0
 Attributes in this pack:
 	- "turnabout ammo"
 		1) Maximum amount of ammo the weapon is allowed to accumulate
-		2) Amount of ammo gained on backstab
-		3) Amount of ammo gained upon successfully sapping a building
+		2) Amount of ammo gained on backstab (optional)
+		3) Amount of ammo gained upon successfully sapping a building (optional)
+		4) Amount of ammo gained on hit (optional)
 
 */
 
@@ -58,6 +59,7 @@ public OnClientPutInServer(client)
 
 new bool:TurnaboutAmmo[2049];
 new TurnaboutAmmo_Max[2049];
+new TurnaboutAmmo_GainOnHit[2049];
 new TurnaboutAmmo_GainOnSap[2049];
 new TurnaboutAmmo_GainOnBackstab[2049];
 new TurnaboutAmmo_Ammo[2049];
@@ -76,7 +78,7 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 		
 	if(StrEqual(attrib, "turnabout ammo"))
 	{
-		new String:values[3][10];
+		new String:values[4][10];
 		ExplodeString(value, " ", values, sizeof(values), sizeof(values[]));
 		
 		TurnaboutAmmo_Max[weapon] = StringToInt(values[0]);
@@ -84,6 +86,10 @@ public Action:CW3_OnAddAttribute(slot, client, const String:attrib[], const Stri
 			TurnaboutAmmo_GainOnBackstab[weapon] = StringToInt(values[1]);
 		if(strlen(values[2]))
 			TurnaboutAmmo_GainOnSap[weapon] = StringToInt(values[2]);
+		if(strlen(values[3]))
+			TurnaboutAmmo_GainOnHit[weapon] = StringToInt(values[2]);
+		else
+			TurnaboutAmmo_GainOnHit[weapon] = 1;
 		
 		TF2Attrib_SetByName(weapon, "mod max primary clip override", -1.0);
 		TF2Attrib_SetByName(weapon, "hidden secondary max ammo penalty", 0.0);
@@ -161,8 +167,9 @@ public OnTakeDamagePost(victim, attacker, inflictor, Float:damage, damagetype, w
 		}
 		if(weapon > -1 && TurnaboutAmmo[weapon])
 		{
-			TurnaboutAmmo_Ammo[weapon] += 1;
+			TurnaboutAmmo_Ammo[weapon] += TurnaboutAmmo_GainOnHit[weapon];
 		}
+		LastWeaponHurtWith[attacker] = weapon;
 	}
 }
 
@@ -213,8 +220,8 @@ void TurnaboutAmmo_PostThink(client, weapon)
 
 public OnEntityDestroyed(ent)
 {
-    if(ent < 0 || ent > 2048)
-        return;
+	if(ent < 0 || ent > 2048)
+		return;
 	
 	TurnaboutAmmo[ent] = false;
 	TurnaboutAmmo_GainOnSap[ent] = 0;
